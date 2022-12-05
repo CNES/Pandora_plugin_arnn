@@ -1,0 +1,5 @@
+[run]
+source = pandora_plugin_arnn
+omit =
+    # Omit tests
+    /tests/*

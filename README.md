@@ -20,50 +20,20 @@
 
 ## Overview
 
-pandora_plugin_arnn short description:
+Pandora_plugin_arnn aims to computes a building segmentation map using pre-trained neural network, and allows to automatically refine the prediction of the neural network. 
 
-Pandora plugin for the Automatically Refined Neural Network (ARNN).
-
-
-* Free software: Apache Software License 2.0
-* Documentation: https://pandora-plugin-arnn.readthedocs.io.
+## Install
 
 
-## Requirements
+## Usage 
 
-TODO
+Let's refer to Pandora's readme or online documentation for further information about Pandora general functionalities.
+More specifically, you can find :
 
-## Features
+Configuration file example
 
-TODO
+## Related
 
-- Feature 1
-- Feature 2
-- ...
+## References 
 
-## Quick Start
-
-TODO
-
-## Documentation
-
-Go in docs/ directory
-
-
-* Documentation: https://pandora-plugin-arnn.readthedocs.io.
-
-
-## Contribution
-
-See [Contribution](./CONTRIBUTING.md) manual
-
-
-* Free software: Apache Software License 2.0
-
-
-## References
-
-This package was created with cars-cookiecutter project template.
-
-Inspired by [main cookiecutter template](https://github.com/audreyfeldroy/cookiecutter-pypackage) and 
-[AI4GEO cookiecutter template](https://gitlab.cnes.fr/ai4geo/lot2/cookiecutter-python)
+*Dumas, L., Defonte, V., Steux, Y., & Sarrazin, E. (2022). IMPROVING PAIRWISE DSM WITH 3SGM: A SEMANTIC SEGMENTATION FOR SGM USING AN AUTOMATICALLY REFINED NEURAL NETWORK. ISPRS Annals of the Photogrammetry, Remote Sensing and Spatial Information Sciences, 2, 167-175.*

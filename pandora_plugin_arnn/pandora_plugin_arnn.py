@@ -133,7 +133,7 @@ class ARNN(semantic_segmentation.AbstractSemanticSegmentation):
             col, begin_col = (1024, 1024 - col)
 
         # Extract RGB img
-        rgb_img = np.zeros((3, row, col), dtype=np.float32)
+        rgb_img = np.full((3, row, col), fill_value=np.nan, dtype=np.float32)
 
         for indx, band in enumerate(["R", "G", "B"]):
             band_index = img_left.attrs["band_list"].index(self._RGBNIR_bands[band])  # type: ignore

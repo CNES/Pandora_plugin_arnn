@@ -304,10 +304,17 @@ class Building_Segmentation(nn.Module):
         """
         patches_expand = np.zeros((patches.shape[0], 5, patches.shape[2], patches.shape[3]), dtype=patches.dtype)
 
-        patches_expand[:, 0, :, :] = (patches[:, 0, :, :] - patches[:, 0, :, :].mean()) / patches[:, 0, :, :].std()
-        patches_expand[:, 1, :, :] = (patches[:, 1, :, :] - patches[:, 1, :, :].mean()) / patches[:, 1, :, :].std()
-        patches_expand[:, 2, :, :] = (patches[:, 2, :, :] - patches[:, 2, :, :].mean()) / patches[:, 2, :, :].std()
+        patches_expand[:, 0, :, :] = (patches[:, 0, :, :] - np.nanmean(patches[:, 0, :, :])) / np.nanstd(
+            patches[:, 0, :, :]
+        )
+        patches_expand[:, 1, :, :] = (patches[:, 1, :, :] - np.nanmean(patches[:, 1, :, :])) / np.nanstd(
+            patches[:, 1, :, :]
+        )
+        patches_expand[:, 2, :, :] = (patches[:, 2, :, :] - np.nanmean(patches[:, 2, :, :])) / np.nanstd(
+            patches[:, 2, :, :]
+        )
 
+        patches_expand[np.isnan(patches_expand)] = 0
         patches_expand = torch.from_numpy(patches_expand)
 
         return patches_expand

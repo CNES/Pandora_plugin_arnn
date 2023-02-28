@@ -32,8 +32,8 @@ from importlib_resources import files
 
 from pandora.semantic_segmentation import semantic_segmentation
 from pandora_plugin_arnn.model.building_segmentation_model import Building_Segmentation
-from ai_pil.ai.prediction import prediction
-from ai_pil.ai.retrain import retrain
+from pandora_plugin_arnn.ai_tool.retrain import retrain
+from pandora_plugin_arnn.ai_tool.prediction import prediction
 from pandora.disparity import AbstractDisparity
 from pandora import constants as cst
 

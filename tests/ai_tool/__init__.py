@@ -19,5 +19,5 @@
 #
 
 """
-Test package for pandora_plugin_arnn.
+Test package for ai_tool.
 """

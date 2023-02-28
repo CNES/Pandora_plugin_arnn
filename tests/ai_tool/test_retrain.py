@@ -17,7 +17,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+"""
+Tests for ai_tool/retrain.
+"""
 
-"""
-Test package for pandora_plugin_arnn.
-"""
+from pandora_plugin_arnn.ai_tool.retrain import retrain
+
+
+def test_retrain(create_model_dataset):
+    """
+    Test retrain function
+    """
+    model_dataset = create_model_dataset
+    gt_model_dataset = create_model_dataset
+
+    # Parameters to set later
+    model = None
+    device = None
+
+    out_model_dataset = retrain(model, model_dataset, device)
+
+    # Check that out_model_dataset returned by retrain equals the ground truth
+    assert out_model_dataset == gt_model_dataset

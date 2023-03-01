@@ -21,9 +21,11 @@
 This module contains fixtures
 """
 
+import numpy as np
+import pandora
 import pytest
 import xarray as xr
-import numpy as np
+from pandora.state_machine import PandoraMachine
 
 
 @pytest.fixture()
@@ -73,3 +75,43 @@ def create_model_dataset():
     )
 
     return model_dataset
+
+
+@pytest.fixture()
+def load_rgb_data():
+    """
+    This fixture creates a model_dataset
+    """
+
+    # Cones images
+    left_data = pandora.read_img("tests/inputs/left_rgb.tif", no_data=np.nan, mask=None)
+    right_data = pandora.read_img("tests/inputs/right_rgb.tif", no_data=np.nan, mask=None)
+
+    return left_data, right_data
+
+
+@pytest.fixture()
+def load_ground_truth():
+    """
+    This fixture loads ground truth
+    """
+
+    # Cones images
+    left_data = pandora.read_img("tests/outputs/gt_disp_left.tif", no_data=np.nan, mask=None)
+    right_data = pandora.read_img("tests/outputs/gt_disp_right.tif", no_data=np.nan, mask=None)
+
+    return left_data, right_data
+
+
+@pytest.fixture()
+def pandora_machine():
+    """
+    Load Pandora Machine
+    """
+
+    # Import pandora plugins
+    pandora.import_plugin()
+    # Instantiate machine
+    pandora_machine = PandoraMachine()
+
+    return pandora_machine

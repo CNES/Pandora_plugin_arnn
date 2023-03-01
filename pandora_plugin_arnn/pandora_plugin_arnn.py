@@ -22,6 +22,7 @@
 This module contains all functions to compute and refine a semantic segmentation map for Pandora
 """
 
+from abc import abstractmethod
 from typing import Dict, Union
 
 import numpy as np

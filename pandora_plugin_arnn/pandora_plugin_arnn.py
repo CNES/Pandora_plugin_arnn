@@ -28,7 +28,7 @@ import numpy as np
 import torch
 import xarray as xr
 from importlib_resources import files
-from json_checker import Checker, Or, And
+from json_checker import Checker, And
 from pandora import constants as cst
 from pandora.disparity import AbstractDisparity
 
@@ -62,7 +62,7 @@ class ARNN(semantic_segmentation.AbstractSemanticSegmentation):
         """
         self.cfg = self.check_conf(**cfg)
         self._refinement = self.cfg["refinement"]
-        self._rgbnir_bands = self.cfg["RGBNIR_bands"]
+        self._rgb_bands = self.cfg["RGB_bands"]
 
     def check_conf(self, **cfg: Dict[str, Union[str, int]]) -> Dict[str, Union[str, int]]:
         """
@@ -78,12 +78,11 @@ class ARNN(semantic_segmentation.AbstractSemanticSegmentation):
             cfg["refinement"] = self._REFINEMENT_  # type: ignore
 
         schema = {
-            "semantic_segmentation_method": And(str, lambda x: x == "ARNN"),
-            "RGBNIR_bands": {
+            "segmentation_method": And(str, lambda x: x == "ARNN"),
+            "RGB_bands": {
                 "R": str,
                 "G": str,
                 "B": str,
-                "NIR": Or(str, lambda input: input is None),
             },
             "refinement": bool,
         }
@@ -92,7 +91,7 @@ class ARNN(semantic_segmentation.AbstractSemanticSegmentation):
         checker.validate(cfg)
         return cfg  # type: ignore
 
-    def desc(self):
+    def desc(self) -> None:
         """
         Describes the method
         """
@@ -109,17 +108,17 @@ class ARNN(semantic_segmentation.AbstractSemanticSegmentation):
         :type cv: xarray.Dataset
         :param img_left: left Dataset image containing :
 
-                - im : 2D (row, col) xarray.DataArray
+                - im : 3D (band, row, col) xarray.DataArray
                 - msk (optional): 2D (row, col) xarray.DataArray
-        :type img_left: xarray
+        :type img_left: xarray.Dataset
         :param img_right: right Dataset image containing :
 
-                - im : 2D (row, col) xarray.DataArray
+                - im : 3D (band, row, col) xarray.DataArray
                 - msk (optional): 2D (row, col) xarray.DataArray
-        :type img_right: xarray
+        :type img_right: xarray.Dataset
         :return: The building segmentation in the left image dataset with the data variables:
 
-                - im : 2D (row, col) xarray.DataArray
+                - im : 3D (band, row, col) xarray.DataArray
                 - msk (optional): 2D (row, col) xarray.DataArray
                 - initial : 2D (row, col) xarray.DataArray building segmentation
         :rtype: xarray.Dataset
@@ -145,13 +144,13 @@ class ARNN(semantic_segmentation.AbstractSemanticSegmentation):
         rgb_img = np.full((3, row, col), fill_value=np.nan, dtype=np.float32)
 
         for indx, band in enumerate(["R", "G", "B"]):
-            band_index = img_left.attrs["band_list"].index(self._rgbnir_bands[band])  # type: ignore
-            rgb_img[indx, begin_row:, begin_col:] = np.copy(img_left["im"].data[:, :, band_index])
+            band_index = list(img_left.band.data).index(self._rgb_bands[band])  # type: ignore
+            rgb_img[indx, begin_row:, begin_col:] = np.copy(img_left["im"].data[band_index, :, :])
 
         model_dataset = xr.Dataset(
             {"im": (["band", "row", "col"], rgb_img.astype(np.float32))},
             coords={
-                "band": np.arange(rgb_img.shape[0]),
+                "band": list(img_left.band.data),
                 "row": np.arange(rgb_img.shape[1]),
                 "col": np.arange(rgb_img.shape[2]),
             },
@@ -172,7 +171,7 @@ class ARNN(semantic_segmentation.AbstractSemanticSegmentation):
 
             model_dataset["annotation"] = xr.DataArray(
                 data=annotation,
-                coords=[img_left.height, img_left.width],
+                coords=[model_dataset.coords["row"], model_dataset.coords["col"]],
                 dims=["row", "col"],
             )
 
@@ -182,7 +181,7 @@ class ARNN(semantic_segmentation.AbstractSemanticSegmentation):
         # Recrop the segmentation to original image size
         img_left["internal"] = xr.DataArray(
             data=model_dataset["initial_prediction"].data[begin_row:, begin_col:],
-            coords=[img_left.height, img_left.width],
+            coords=[img_left.coords["row"], img_left.coords["col"]],
             dims=["row", "col"],
         )
 
@@ -205,19 +204,19 @@ class ARNN(semantic_segmentation.AbstractSemanticSegmentation):
         :type cv: xarray.Dataset
         :param img_left: left Dataset image containing :
 
-                - im : 2D (row, col) xarray.DataArray
+                - im : 3D (band, row, col) xarray.DataArray
                 - msk (optional): 2D (row, col) xarray.DataArray
         :type img_left: xarray
         :param img_right: right Dataset image containing :
 
-                - im : 2D (row, col) xarray.DataArray
+                - im : 3D (band,row, col) xarray.DataArray
                 - msk (optional): 2D (row, col) xarray.DataArray
         :type img_right: xarray
         :param initial_prediction: First prediction of the model
         :type initial_prediction: 2D (row, col) np.array
         :return: The building segmentation in the left image dataset with the data variables:
 
-                - im : 2D (row, col) xarray.DataArray
+                - im : 3D (band, row, col) xarray.DataArray
                 - msk (optional): 2D (row, col) xarray.DataArray
                 - initial : 2D (row, col) xarray.DataArray building segmentation
         :rtype: xarray.Dataset

@@ -24,9 +24,9 @@ This module contains all functions to compute retrain in plugin_arnn
 
 from typing import Tuple
 
+import numpy as np
 import torch
 import xarray as xr
-import numpy as np
 from torch import nn
 
 from .common import patch_image

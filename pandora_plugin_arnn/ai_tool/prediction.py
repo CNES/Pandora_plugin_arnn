@@ -24,9 +24,13 @@ This module contains all functions to compute prediction in plugin_arnn
 
 import torch
 import xarray as xr
+from itertools import product
+import numpy as np
+from common import patch_image
 
-
-def prediction(model_dataset: xr.Dataset, model: torch.nn.Module, device: torch.device) -> xr.Dataset:
+def prediction(
+    model_dataset: xr.Dataset, model: torch.nn.Module, device: torch.device
+) -> xr.Dataset:
     """
     Makes a prediction using neural network model
 
@@ -43,4 +47,55 @@ def prediction(model_dataset: xr.Dataset, model: torch.nn.Module, device: torch.
             - confidence : Network confidence : 2D xarray.DataArray float32
     """
 
-    return model_dataset
+    # Load and check python module
+    patch_size = model.get_patch_size()
+
+    # Patches image
+    overlaps = 0
+    patches = patch_image(
+        model_dataset["im"].data, patch_size, overlaps=overlaps
+    )
+
+    # Apply transformation
+    patches = model.transform_patches(patches)
+    patches = patches.to(device)
+
+    # Predict and reconstruct image
+    nb_classes = len(model.get_classes())
+    nb_bands, nb_row, nb_col = model_dataset["im"].shape
+
+    # Indices of each patch
+    offset_col = np.append(
+        np.arange(0, nb_col - patch_size, patch_size - overlaps),
+        (nb_col - patch_size),
+    )
+    offset_row = np.append(
+        np.arange(0, nb_row - patch_size, patch_size - overlaps),
+        (nb_row - patch_size),
+    )
+    offset = product(offset_row, offset_col)
+
+    # Make prediction and reconstrut initial 2D image
+    pred = np.zeros((nb_classes, nb_row, nb_col), dtype=np.float32)
+    with torch.no_grad():
+        for patch_idx, (row_off, col_off) in enumerate(offset):
+            patch_pred = (
+                model.predict(patches[patch_idx : patch_idx + 1, :, :, :])
+                .cpu()
+                .numpy()
+                .astype(np.float32)
+            )
+            pred[
+                :,
+                row_off : row_off + patch_size - overlaps,
+                col_off : col_off + patch_size - overlaps,
+            ] += np.squeeze(patch_pred)
+
+    pred = np.argmax(pred, axis=0).astype(np.float32)
+
+    # Add prediction to xarray dataset
+    model_dataset["initial_prediction"] = xr.DataArray(
+        data=pred,
+        coords=[model_dataset.coords["row"], model_dataset.coords["col"]],
+        dims=["row", "col"],
+    )

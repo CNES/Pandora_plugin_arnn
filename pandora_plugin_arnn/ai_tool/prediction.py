@@ -28,6 +28,7 @@ from itertools import product
 import numpy as np
 from common import patch_image
 
+
 def prediction(
     model_dataset: xr.Dataset, model: torch.nn.Module, device: torch.device
 ) -> xr.Dataset:

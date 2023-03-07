@@ -26,12 +26,13 @@ import torch
 import xarray as xr
 
 
-def retrain(model: torch.nn.Module,
-            model_dataset: xr.Dataset,
-            device: torch.device,
-            retrain_epoch: int = 1,
-            ignore_index: int = -1
-            ):
+def retrain(
+    model: torch.nn.Module,
+    model_dataset: xr.Dataset,
+    device: torch.device,
+    retrain_epoch: int = 1,
+    ignore_index: int = -1,
+):
     """
     Retrain network with user annotation
 

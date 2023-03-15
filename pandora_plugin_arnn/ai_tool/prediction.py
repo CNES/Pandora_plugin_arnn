@@ -22,16 +22,14 @@
 This module contains all functions to compute prediction in plugin_arnn
 """
 
+from itertools import product
 import torch
 import xarray as xr
-from itertools import product
 import numpy as np
-from common import patch_image
+from .common import patch_image
 
 
-def prediction(
-    model_dataset: xr.Dataset, model: torch.nn.Module, device: torch.device
-) -> xr.Dataset:
+def prediction(model_dataset: xr.Dataset, model: torch.nn.Module, device: torch.device) -> None:
     """
     Makes a prediction using neural network model
 
@@ -42,10 +40,7 @@ def prediction(
     :type model: torch.nn.Module
     :param device: torch device to use
     :type device: torch.device
-    :return: Input image xarray.DataSet containing the variables :
-            - im : 3D (band, row, col) xarray.DataArray float32
-            - initial_prediction : argmax of the prediction : 2D xarray.DataArray float32
-            - confidence : Network confidence : 2D xarray.DataArray float32
+    :return: None
     """
 
     # Load and check python module
@@ -53,9 +48,7 @@ def prediction(
 
     # Patches image
     overlaps = 0
-    patches = patch_image(
-        model_dataset["im"].data, patch_size, overlaps=overlaps
-    )
+    patches = patch_image(model_dataset["im"].data, patch_size, overlaps=overlaps)
 
     # Apply transformation
     patches = model.transform_patches(patches)
@@ -63,7 +56,7 @@ def prediction(
 
     # Predict and reconstruct image
     nb_classes = len(model.get_classes())
-    nb_bands, nb_row, nb_col = model_dataset["im"].shape
+    _, nb_row, nb_col = model_dataset["im"].shape
 
     # Indices of each patch
     offset_col = np.append(
@@ -80,12 +73,7 @@ def prediction(
     pred = np.zeros((nb_classes, nb_row, nb_col), dtype=np.float32)
     with torch.no_grad():
         for patch_idx, (row_off, col_off) in enumerate(offset):
-            patch_pred = (
-                model.predict(patches[patch_idx : patch_idx + 1, :, :, :])
-                .cpu()
-                .numpy()
-                .astype(np.float32)
-            )
+            patch_pred = model.predict(patches[patch_idx : patch_idx + 1, :, :, :]).cpu().numpy().astype(np.float32)
             pred[
                 :,
                 row_off : row_off + patch_size - overlaps,

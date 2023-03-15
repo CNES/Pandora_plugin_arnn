@@ -44,18 +44,18 @@ def prediction(model_dataset: xr.Dataset, model: torch.nn.Module, device: torch.
     """
 
     # Load and check python module
-    patch_size = model.get_patch_size()
+    patch_size = model.get_patch_size()  # type: ignore
 
     # Patches image
     overlaps = 0
     patches = patch_image(model_dataset["im"].data, patch_size, overlaps=overlaps)
 
     # Apply transformation
-    patches = model.transform_patches(patches)
+    patches = model.transform_patches(patches)  # type: ignore
     patches = patches.to(device)
 
     # Predict and reconstruct image
-    nb_classes = len(model.get_classes())
+    nb_classes = len(model.get_classes())  # type: ignore
     _, nb_row, nb_col = model_dataset["im"].shape
 
     # Indices of each patch
@@ -73,7 +73,12 @@ def prediction(model_dataset: xr.Dataset, model: torch.nn.Module, device: torch.
     pred = np.zeros((nb_classes, nb_row, nb_col), dtype=np.float32)
     with torch.no_grad():
         for patch_idx, (row_off, col_off) in enumerate(offset):
-            patch_pred = model.predict(patches[patch_idx : patch_idx + 1, :, :, :]).cpu().numpy().astype(np.float32)
+            patch_pred = (
+                model.predict(patches[patch_idx : patch_idx + 1, :, :, :])  # type: ignore
+                .cpu()
+                .numpy()
+                .astype(np.float32)
+            )
             pred[
                 :,
                 row_off : row_off + patch_size - overlaps,
@@ -85,6 +90,6 @@ def prediction(model_dataset: xr.Dataset, model: torch.nn.Module, device: torch.
     # Add prediction to xarray dataset
     model_dataset["initial_prediction"] = xr.DataArray(
         data=pred,
-        coords=[model_dataset.coords["row"], model_dataset.coords["col"]],
+        coords=[model_dataset.height, model_dataset.width],
         dims=["row", "col"],
     )

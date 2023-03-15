@@ -18,31 +18,3 @@
 # limitations under the License.
 #
 """Tests for `pandora_plugin_arnn` package."""
-
-# Third party imports
-import pytest
-
-# pandora_plugin_arnn imports
-import pandora_plugin_arnn
-
-
-@pytest.fixture
-def response():
-    """Sample pytest fixture.
-
-    See more at: http://doc.pytest.org/en/latest/fixture.html
-    """
-    # Example to edit
-    return "response"
-
-
-def test_content(response):  # pylint: disable=redefined-outer-name
-    """Sample pytest test function with the pytest fixture as an argument."""
-    # Example to edit
-    print(response)
-
-
-def test_pandora_plugin_arnn():
-    """Sample pytest pandora_plugin_arnn module test function"""
-    assert pandora_plugin_arnn.__author__ == "CNES"
-    assert pandora_plugin_arnn.__email__ == "cars@cnes.fr"

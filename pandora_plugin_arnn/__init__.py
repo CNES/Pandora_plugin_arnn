@@ -21,14 +21,3 @@
 """
 Top-level package for pandora_plugin_arnn.
 """
-
-from importlib.metadata import version
-
-# version through setuptools_scm when python3 > 3.8
-try:
-    __version__ = version("pandora_plugin_arnn")
-except Exception:  # pylint: disable=broad-except
-    __version__ = "unknown"
-
-__author__ = "CNES"
-__email__ = "cars@cnes.fr"

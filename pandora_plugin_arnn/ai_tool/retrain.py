@@ -68,10 +68,10 @@ def retrain(
     image_patches, initial_patches, annotations_patches = prepare_retrain_data(model, model_dataset)
     image_patches = image_patches.to(device)
 
-    for epoch in range(retrain_epoch):  # pylint:disable=unused-variable
-        prediction_data = model.predict(image_patches)
+    for _ in range(retrain_epoch):
+        prediction_data = model.predict(image_patches)  # type: ignore
         loss = retrain_loss(prediction_data, annotations_patches, ignore_index, initial_patches, device)
-        model.backward(loss)
+        model.backward(loss)  # type: ignore
 
     # Make new prediction
     prediction(model_dataset, model, device)
@@ -96,11 +96,11 @@ def prepare_retrain_data(
     :return: Deep copy of image, initial prediction and annotation patches
     :rtype: Tuple[torch.Tensor(nb_patches, band, row, col), np.ndarray, np.ndarray]
     """
-    patch_size = model.get_patch_size()
+    patch_size = model.get_patch_size()  # type: ignore
 
     # Patches image and annotations
     image_patches = patch_image(model_dataset["im"].data, patch_size)
-    image_patches = model.transform_patches(image_patches)
+    image_patches = model.transform_patches(image_patches)  # type: ignore
 
     initial_patches = patch_image(model_dataset["initial_prediction"].data, patch_size)
 
@@ -117,9 +117,9 @@ def prepare_retrain_data(
 
 def retrain_loss(
     last_prediction: torch.Tensor,
-    annotations: np.array,
+    annotations: np.ndarray,
     ignore_index: int,
-    initial_prediction: np.array,
+    initial_prediction: np.ndarray,
     device: torch.device,
 ) -> torch.Tensor:
     """
@@ -139,10 +139,10 @@ def retrain_loss(
     :rtype: torch.Tensor with grad_fn
     """
     tensor_annotations = torch.from_numpy(annotations)
-    tensor_annotations = tensor_annotations.type(torch.LongTensor)
+    tensor_annotations = tensor_annotations.type(torch.long)
     tensor_annotations = tensor_annotations.to(device)
 
-    initial_prediction = torch.from_numpy(initial_prediction).type(torch.LongTensor)
+    initial_prediction = torch.from_numpy(initial_prediction).type(torch.long)
     initial_prediction = initial_prediction.to(device)
 
     ce_annotation = nn.CrossEntropyLoss(ignore_index=ignore_index)

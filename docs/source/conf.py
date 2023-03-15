@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+# pylint: skip-file
 #
 #
 # This file is execfile()d with the current directory set to its

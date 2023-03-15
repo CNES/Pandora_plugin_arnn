@@ -23,10 +23,10 @@ Tests for ai_tool/common.
 
 import rasterio
 import numpy as np
-import pandora_plugin_arnn.ai_tool.common as common
+from pandora_plugin_arnn.ai_tool import common
 
 
-def test_image_patch(create_model_dataset):
+def test_image_patch():
     """
     Test image_patch function
     """
@@ -60,7 +60,7 @@ def test_image_patch(create_model_dataset):
     np.testing.assert_array_equal(output_patches[19], gt_patch_19)
 
 
-def test_image_patch_overlaps(create_model_dataset):
+def test_image_patch_overlaps():
     """
     Test image_patch function with overlaps
     """
@@ -94,7 +94,7 @@ def test_image_patch_overlaps(create_model_dataset):
     np.testing.assert_array_equal(output_patches[19], gt_patch_19)
 
 
-def test_image_patch_multiband(create_model_dataset):
+def test_image_patch_multiband():
     """
     Test image_patch function with multiband image
     """

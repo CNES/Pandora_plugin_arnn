@@ -24,12 +24,10 @@ This module contains building segmentation neural network.
 
 import torch
 import numpy as np
-import torch.nn as nn
-import torch.nn.functional as F
-from torch import optim
+from torch import nn, optim
 
 
-# pylint: disable=no-member
+# pylint: disable=too-many-arguments
 class BasicBlock(nn.Module):
     """Block used in ResNet18 and 34"""
 
@@ -44,7 +42,7 @@ class BasicBlock(nn.Module):
         bias=False,
         conv="classic",
     ):
-        super(BasicBlock, self).__init__()
+        super().__init__()
         if conv == "classic":
             self.conv1 = nn.Conv2d(
                 in_planes,
@@ -76,10 +74,16 @@ class BasicBlock(nn.Module):
             )
         self.conv_type = conv
 
-    def forward(self, x):
-        residual = x
+    def forward(self, input_):
+        """
+        Forward method
 
-        out = self.conv1(x)
+        :param input_: torch 4D array (nb patch, 5, 1024, 1024)
+        :return: network prediction torch 4D array (nb patch, 2, 1024, 1024)
+        """
+        residual = input_
+
+        out = self.conv1(input_)
         if self.conv_type == "classic":
             out = self.bn1(out)
         out = self.relu(out)
@@ -88,7 +92,7 @@ class BasicBlock(nn.Module):
         if self.conv_type == "classic":
             out = self.bn2(out)
         if self.downsample is not None:
-            residual = self.downsample(x)
+            residual = self.downsample(input_)
         out += residual
         out = self.relu(out)
 
@@ -111,9 +115,9 @@ class Encoder34(nn.Module):
         conv="classic",
         drop=False,
     ):
-        super(Encoder34, self).__init__()
+        super().__init__()
         self.layer = layer
-        if self.layer == 1 or self.layer == 4:
+        if self.layer in (1, 4):
             self.block1 = BasicBlock(in_planes, out_planes, kernel_size, stride, padding, groups, bias, conv)
             self.block2 = BasicBlock(out_planes, out_planes, kernel_size, 1, padding, groups, bias, conv)
             self.block3 = BasicBlock(out_planes, out_planes, kernel_size, 1, padding, groups, bias, conv)
@@ -131,19 +135,25 @@ class Encoder34(nn.Module):
             self.block6 = BasicBlock(out_planes, out_planes, kernel_size, 1, padding, groups, bias, conv)
         self.drop = drop
 
-    def forward(self, x):
+    def forward(self, input_):
+        """
+        Forward method
+
+        :param input_: torch 4D array (nb patch, 5, 1024, 1024)
+        :return: network prediction torch 4D array (nb patch, 2, 1024, 1024)
+        """
         if self.drop:
-            x = nn.Dropout2d(p=0.05)(x)
-        x = self.block1(x)
-        x = self.block2(x)
-        x = self.block3(x)
+            input_ = nn.Dropout2d(p=0.05)(input_)
+        input_ = self.block1(input_)
+        input_ = self.block2(input_)
+        input_ = self.block3(input_)
         if self.layer == 2:
-            x = self.block4(x)
+            input_ = self.block4(input_)
         if self.layer == 3:
-            x = self.block4(x)
-            x = self.block5(x)
-            x = self.block6(x)
-        return x
+            input_ = self.block4(input_)
+            input_ = self.block5(input_)
+            input_ = self.block6(input_)
+        return input_
 
 
 class Decoder(nn.Module):
@@ -157,11 +167,10 @@ class Decoder(nn.Module):
         stride=1,
         padding=0,
         output_padding=0,
-        groups=1,
         bias=False,
         drop=False,
     ):
-        super(Decoder, self).__init__()
+        super().__init__()
         self.conv1 = nn.Sequential(
             nn.Conv2d(in_planes, in_planes // 4, 1, 1, 0, bias=bias),
             nn.BatchNorm2d(in_planes // 4),
@@ -187,17 +196,24 @@ class Decoder(nn.Module):
         )
         self.drop = drop
 
-    def forward(self, x):
+    def forward(self, input_):
+        """
+        Forward method
+
+        :param input_: torch 4D array (nb patch, 5, 1024, 1024)
+        :return: network prediction torch 4D array (nb patch, 2, 1024, 1024)
+        """
         if self.drop:
-            x = nn.Dropout2d(p=0.05)(x)
-        x = self.conv1(x)
-        x = self.tp_conv(x)
-        x = self.conv2(x)
+            input_ = nn.Dropout2d(p=0.05)(input_)
+        input_ = self.conv1(input_)
+        input_ = self.tp_conv(input_)
+        input_ = self.conv2(input_)
 
-        return x
+        return input_
 
 
-class Building_Segmentation(nn.Module):
+# pylint: disable=too-many-instance-attributes
+class BuildingSegmentation(nn.Module):
     """
     Generate model architecture. LinkNet34 with interactivity.
     """
@@ -209,7 +225,7 @@ class Building_Segmentation(nn.Module):
         in_channels = 3
         n_classes = 2
 
-        super(Building_Segmentation, self).__init__()
+        super().__init__()
         # assume one channel per class
         self.conv1 = nn.Conv2d(in_channels + n_classes, 64, 7, 2, 3, bias=False)
         self.bn1 = nn.BatchNorm2d(64)

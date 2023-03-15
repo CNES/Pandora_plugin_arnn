@@ -20,9 +20,9 @@
 """
 Tests for ai_tool/prediction.
 """
+import pytest
 
 from pandora_plugin_arnn.ai_tool.prediction import prediction
-import pytest
 
 
 @pytest.mark.skip(reason="Not implemented yet")
@@ -31,13 +31,9 @@ def test_prediction(create_model_dataset):
     Test prediction function
     """
     model_dataset = create_model_dataset
-    gt_model_dataset = create_model_dataset
 
     # Parameters to set later
     model = None
     device = None
 
-    out_model_dataset = prediction(model_dataset, model, device)
-
-    # Check that out_model_dataset returned by prediction equals the ground truth
-    assert out_model_dataset == gt_model_dataset
+    prediction(model_dataset, model, device)

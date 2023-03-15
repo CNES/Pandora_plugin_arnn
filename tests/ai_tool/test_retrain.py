@@ -20,9 +20,9 @@
 """
 Tests for ai_tool/retrain.
 """
+import pytest
 
 from pandora_plugin_arnn.ai_tool.retrain import retrain
-import pytest
 
 
 @pytest.mark.skip(reason="Not implemented yet")

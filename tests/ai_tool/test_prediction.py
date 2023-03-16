@@ -22,9 +22,11 @@ Tests for ai_tool/prediction.
 """
 
 from pandora_plugin_arnn.ai_tool.prediction import prediction
+import pytest
 
 
-def disable_test_prediction(create_model_dataset):
+@pytest.mark.skip(reason="Not implemented yet")
+def test_prediction(create_model_dataset):
     """
     Test prediction function
     """

@@ -22,9 +22,11 @@ Tests for ai_tool/retrain.
 """
 
 from pandora_plugin_arnn.ai_tool.retrain import retrain
+import pytest
 
 
-def disable_test_retrain(create_model_dataset):
+@pytest.mark.skip(reason="Not implemented yet")
+def test_retrain(create_model_dataset):
     """
     Test retrain function
     """

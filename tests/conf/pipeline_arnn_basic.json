@@ -6,6 +6,7 @@
     },
     "matching_cost" : {
       "matching_cost_method": "census",
+      "band": "r",
       "window_size": 5,
       "subpix": 1
     },

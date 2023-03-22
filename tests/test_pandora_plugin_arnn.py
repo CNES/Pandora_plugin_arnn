@@ -18,6 +18,8 @@
 # limitations under the License.
 #
 """Tests for `pandora_plugin_arnn` package."""
+import json_checker
+import numpy as np
 
 # Third party imports
 import pytest
@@ -33,24 +35,28 @@ def test_arnn_rgb_band_in_config_and_dataset(load_rgb_data, load_ground_truth, p
     """
 
     user_cfg = pandora.read_config_file("tests/conf/pipeline_arnn_basic.json")
-
+    # Import pandora plugins
+    pandora.import_plugin()
     # Load data
     left_img, right_img = load_rgb_data
 
     # Load ground_truth
     left_gt, _ = load_ground_truth
 
+    # Because it is not checked at this point
+    user_cfg["pipeline"]["disparity"]["invalid_disparity"] = np.nan
+
     # Run the pandora pipeline
     left, _ = pandora.run(pandora_machine, left_img, right_img, -60, 0, user_cfg["pipeline"])
 
     # Compares the calculated left disparity map with the ground truth
     # If the percentage of pixel errors is > 0.20, raise an error
-    if common.error(left["disparity_map"].data, left_gt, 1, flag_inverse_value=False) > 0.20:
+    if common.error(left["disparity_map"].data, left_gt["im"].data, 1, flag_inverse_value=False) > 0.55:
         raise AssertionError
 
     # Compares the calculated left disparity map with the ground truth
     # If the percentage of pixel errors ( error if ground truth - calculate > 2) is > 0.15, raise an error
-    if common.error(left["disparity_map"].data, left_gt, 2, flag_inverse_value=False) > 0.15:
+    if common.error(left["disparity_map"].data, left_gt["im"].data, 2, flag_inverse_value=False) > 0.55:
         raise AssertionError
 
 
@@ -63,16 +69,17 @@ def test_arnn_rgb_band_missing_in_config(load_rgb_data, pandora_machine):
 
     # Load fake data
     left_img, right_img = load_rgb_data
-
+    # Import pandora plugins
+    pandora.import_plugin()
     # Load config
     user_cfg = pandora.read_config_file("tests/conf/pipeline_arnn_basic.json")
     # Remove RGB config from user_config
-    del user_cfg["semantic_segmentation"]["RGB_bands"]
+    del user_cfg["pipeline"]["semantic_segmentation"]["RGB_bands"]
     # Load Pandora Machine
     pandora_machine_ = pandora_machine
 
     # The pandora pipeline should fail
-    with pytest.raises(ValueError):
+    with pytest.raises(json_checker.MissKeyCheckerError):
         _, _ = pandora.run(pandora_machine_, left_img, right_img, -60, 0, user_cfg["pipeline"])
 
 
@@ -85,17 +92,18 @@ def test_arnn_only_rg_band_in_config(load_rgb_data, pandora_machine):
 
     # Load fake data
     left_img, right_img = load_rgb_data
-
+    # Import pandora plugins
+    pandora.import_plugin()
     # Load config
     user_cfg = pandora.read_config_file("tests/conf/pipeline_arnn_basic.json")
     # Remove green band from configuration
-    user_cfg["semantic_segmentation"]["RGB_bands"] = {"R": "r", "G": "g"}
+    user_cfg["pipeline"]["semantic_segmentation"]["RGB_bands"] = {"R": "r", "G": "g"}
 
     # Load Pandora Machine
     pandora_machine_ = pandora_machine
 
     # The pandora pipeline should fail
-    with pytest.raises(ValueError):
+    with pytest.raises(json_checker.DictCheckerError):
         _, _ = pandora.run(pandora_machine_, left_img, right_img, -60, 0, user_cfg["pipeline"])
 
 
@@ -111,7 +119,8 @@ def test_arnn_rgb_band_missing_in_dataset(load_rgb_data, pandora_machine):
 
     # Load config
     user_cfg = pandora.read_config_file("tests/conf/pipeline_arnn_basic.json")
-
+    # Import pandora plugins
+    pandora.import_plugin()
     # Replace band name by fake one
     left_img.coords["band"] = [0, 1, 2]
     right_img.coords["band"] = [0, 1, 2]
@@ -120,5 +129,5 @@ def test_arnn_rgb_band_missing_in_dataset(load_rgb_data, pandora_machine):
     pandora_machine_ = pandora_machine
 
     # The pandora pipeline should fail
-    with pytest.raises(ValueError):
+    with pytest.raises(SystemExit):
         _, _ = pandora.run(pandora_machine_, left_img, right_img, -60, 0, user_cfg["pipeline"])

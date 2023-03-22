@@ -112,6 +112,6 @@ def pandora_machine():
     # Import pandora plugins
     pandora.import_plugin()
     # Instantiate machine
-    pandora_machine = PandoraMachine()
+    pandora_machine_ = PandoraMachine()
 
-    return pandora_machine
+    return pandora_machine_

@@ -32,7 +32,6 @@ from importlib_resources import files
 from json_checker import Checker, And
 from pandora import constants as cst
 from pandora.disparity import AbstractDisparity
-
 # pylint: disable=import-error
 # pylint: disable=no-name-in-module
 from pandora.semantic_segmentation import semantic_segmentation
@@ -92,6 +91,7 @@ class ARNN(semantic_segmentation.AbstractSemanticSegmentation):
         checker.validate(cfg)
         return cfg  # type: ignore
 
+    @abstractmethod
     def desc(self) -> None:
         """
         Describes the method

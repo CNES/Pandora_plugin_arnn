@@ -90,6 +90,6 @@ def prediction(model_dataset: xr.Dataset, model: torch.nn.Module, device: torch.
     # Add prediction to xarray dataset
     model_dataset["initial_prediction"] = xr.DataArray(
         data=pred,
-        coords=[model_dataset.coords["row"], model_dataset.coords["col"]],
+        coords=[model_dataset.coords["row"], model_dataset.coords["col"]],  # type: ignore
         dims=["row", "col"],
     )

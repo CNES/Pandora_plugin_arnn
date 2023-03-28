@@ -32,6 +32,7 @@ from importlib_resources import files
 from json_checker import Checker, And
 from pandora import constants as cst
 from pandora.disparity import AbstractDisparity
+
 # pylint: disable=import-error
 # pylint: disable=no-name-in-module
 from pandora.semantic_segmentation import semantic_segmentation
@@ -172,7 +173,7 @@ class ARNN(semantic_segmentation.AbstractSemanticSegmentation):
 
             model_dataset["annotation"] = xr.DataArray(
                 data=annotation,
-                coords=[model_dataset.coords["row"], model_dataset.coords["col"]],
+                coords=[model_dataset.coords["row"], model_dataset.coords["col"]],  # type: ignore
                 dims=["row", "col"],
             )
 
@@ -182,7 +183,7 @@ class ARNN(semantic_segmentation.AbstractSemanticSegmentation):
         # Recrop the segmentation to original image size
         img_left["internal"] = xr.DataArray(
             data=model_dataset["initial_prediction"].data[begin_row:, begin_col:],
-            coords=[img_left.coords["row"], img_left.coords["col"]],
+            coords=[img_left.coords["row"], img_left.coords["col"]],  # type: ignore
             dims=["row", "col"],
         )
 

@@ -2,7 +2,7 @@
   "pipeline":
   {
     "right_disp_map": {
-      "method": "accurate"
+      "method": "None"
     },
     "matching_cost" : {
       "matching_cost_method": "census",
@@ -12,7 +12,8 @@
     },
     "semantic_segmentation": {
       "segmentation_method": "ARNN",
-      "RGB_bands": {"R": "r", "G": "g", "B": "b"}
+      "RGB_bands": {"R": "r", "G": "g", "B": "b"},
+      "vegetation_band": {"classes" : ["olivier", "nenuphar"]}
     },
     "cost_volume_confidence" : {
       "confidence_method": "ambiguity"

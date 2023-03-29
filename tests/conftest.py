@@ -91,6 +91,23 @@ def load_rgb_data():
 
 
 @pytest.fixture()
+def load_rgb_data_with_classif():
+    """
+    This fixture creates a model_dataset with classification
+    """
+
+    # Cones images
+    left_data = pandora.read_img(
+        "tests/inputs/left_rgb.tif", no_data=np.nan, mask=None, classif="tests/inputs/left_classif.tif"
+    )
+    right_data = pandora.read_img(
+        "tests/inputs/right_rgb.tif", no_data=np.nan, mask=None, classif="tests/inputs/right_classif.tif"
+    )
+
+    return left_data, right_data
+
+
+@pytest.fixture()
 def load_ground_truth():
     """
     This fixture loads ground truth

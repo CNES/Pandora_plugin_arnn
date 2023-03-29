@@ -64,6 +64,7 @@ class ARNN(semantic_segmentation.AbstractSemanticSegmentation):
         self.cfg = self.check_conf(**cfg)
         self._refinement = self.cfg["refinement"]
         self._rgb_bands = self.cfg["RGB_bands"]
+        self._vegetation_band = self.cfg["vegetation_band"]
 
     def check_conf(self, **cfg: Dict[str, Union[str, int]]) -> Dict[str, Union[str, int]]:
         """
@@ -86,6 +87,7 @@ class ARNN(semantic_segmentation.AbstractSemanticSegmentation):
                 "B": str,
             },
             "refinement": bool,
+            "vegetation_band": dict,
         }
 
         checker = Checker(schema)
@@ -173,7 +175,7 @@ class ARNN(semantic_segmentation.AbstractSemanticSegmentation):
 
             model_dataset["annotation"] = xr.DataArray(
                 data=annotation,
-                coords=[model_dataset.coords["row"], model_dataset.coords["col"]],  # type: ignore
+                coords=[model_dataset.coords["row"], model_dataset.coords["col"]],
                 dims=["row", "col"],
             )
 
@@ -183,7 +185,7 @@ class ARNN(semantic_segmentation.AbstractSemanticSegmentation):
         # Recrop the segmentation to original image size
         img_left["internal"] = xr.DataArray(
             data=model_dataset["initial_prediction"].data[begin_row:, begin_col:],
-            coords=[img_left.coords["row"], img_left.coords["col"]],  # type: ignore
+            coords=[img_left.coords["row"], img_left.coords["col"]],
             dims=["row", "col"],
         )
 
@@ -262,7 +264,7 @@ class ARNN(semantic_segmentation.AbstractSemanticSegmentation):
         annotation[np.where((disp["validity_mask"].data & invalids) != 0)] = -1
 
         # Find vegetation
-        vegetation_map = self.compute_vegetation_map(cv, img_left)
+        vegetation_map = self.compute_vegetation_map(img_left)
 
         # Dilates the vegetation map and remove vegetation pixel in annotation map
         vegetation_map = ndimage.binary_dilation(vegetation_map, structure=np.ones((10, 10))).astype(
@@ -285,16 +287,10 @@ class ARNN(semantic_segmentation.AbstractSemanticSegmentation):
         # Returns null value for now
         return 0
 
-    @staticmethod
-    def compute_vegetation_map(cv: xr.Dataset, img_left: xr.Dataset):
+    def compute_vegetation_map(self, img_left: xr.Dataset):
         """
         Compute vegetation map
 
-        :param cv: the cost volume, with the data variables:
-
-                - cost_volume 3D xarray.DataArray (row, col, disp)
-                - confidence_measure (optional): 3D xarray.DataArray (row, col, indicator)
-        :type cv: xarray.Dataset
         :param img_left: left Dataset image containing :
 
                 - im : 2D (row, col) xarray.DataArray
@@ -304,8 +300,13 @@ class ARNN(semantic_segmentation.AbstractSemanticSegmentation):
         :rtype: 2D (row, cool) np.array dtype=bool
         """
         # Copy create to avoid pylint error with stub function
-        _ = np.copy(cv)
-        # vegetation map (0 = not vegetation, 1 = vegetation)
-        vegetation_map = np.zeros((len(img_left.coords["row"]), len(img_left.coords["col"])), dtype=bool)
+        vegetation_map = np.zeros((img_left.dims["row"], img_left.dims["col"]))
 
+        # vegetation map (0 = not vegetation, 1 = vegetation)
+        for _, class_name in enumerate(self._vegetation_band["classes"]):  # type: ignore
+            band_index = list(img_left.band_classif.data).index(class_name)
+            classif = img_left["classif"][band_index]
+            vegetation_map = np.logical_or(vegetation_map, classif)
+
+        vegetation_map = vegetation_map.astype(int)
         return vegetation_map

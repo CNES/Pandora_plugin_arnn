@@ -1,0 +1,25 @@
+{
+  "pipeline":
+  {
+    "right_disp_map": {
+      "method": "accurate"
+    },
+    "matching_cost" : {
+      "matching_cost_method": "census",
+      "band": "r",
+      "window_size": 5,
+      "subpix": 1
+    },
+    "semantic_segmentation": {
+      "segmentation_method": "ARNN",
+      "RGB_bands": {"R": "r", "G": "g", "B": "b"}
+    },
+    "cost_volume_confidence" : {
+      "confidence_method": "ambiguity"
+    },
+    "disparity": {
+      "disparity_method": "wta",
+      "invalid_disparity": "NaN"
+    }
+  }
+}

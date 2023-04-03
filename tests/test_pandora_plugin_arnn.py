@@ -147,13 +147,13 @@ def test_compute_vegetation_map(load_rgb_data_with_classif):
         **{
             "segmentation_method": "ARNN",
             "RGB_bands": {"R": "r", "G": "g", "B": "b"},
-            "vegetation_band": {"classes": ["nenuphar", "olivier"]},
+            "vegetation_band": {"classes": ["forest", "olive tree"]},
         }
     )
 
     vegetation_map = ssgm_.compute_vegetation_map(left)
 
-    # ground thruth
+    # ground truth
     gt_vegetation_map = np.load("tests/outputs/fused_classif.npy")
 
     assert gt_vegetation_map.data == vegetation_map.data

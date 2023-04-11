@@ -65,12 +65,20 @@ def retrain(
     if "initial_prediction" not in model_dataset:
         prediction(model_dataset, model, device)
 
-    image_patches, initial_patches, annotations_patches = prepare_retrain_data(model, model_dataset)
+    image_patches, initial_patches, annotations_patches = prepare_retrain_data(
+        model, model_dataset
+    )
     image_patches = image_patches.to(device)
 
     for _ in range(retrain_epoch):
         prediction_data = model.predict(image_patches)  # type: ignore
-        loss = retrain_loss(prediction_data, annotations_patches, ignore_index, initial_patches, device)
+        loss = retrain_loss(
+            prediction_data,
+            annotations_patches,
+            ignore_index,
+            initial_patches,
+            device,
+        )
         model.backward(loss)  # type: ignore
 
     # Make new prediction
@@ -102,9 +110,13 @@ def prepare_retrain_data(
     image_patches = patch_image(model_dataset["im"].data, patch_size)
     image_patches = model.transform_patches(image_patches)  # type: ignore
 
-    initial_patches = patch_image(model_dataset["initial_prediction"].data, patch_size)
+    initial_patches = patch_image(
+        model_dataset["initial_prediction"].data, patch_size
+    )
 
-    annotations_patches = patch_image(model_dataset["annotation"].data, patch_size)
+    annotations_patches = patch_image(
+        model_dataset["annotation"].data, patch_size
+    )
 
     # Remove patches that do not contain annotations
     patchs_id = []
@@ -112,7 +124,11 @@ def prepare_retrain_data(
         if np.sum(annotations_patches[index_, :, :] != ignore_index) != 0:
             patchs_id.append(index_)
 
-    return image_patches[patchs_id, :, :, :], initial_patches[patchs_id, :, :], annotations_patches[patchs_id, :, :]
+    return (
+        image_patches[patchs_id, :, :, :],
+        initial_patches[patchs_id, :, :],
+        annotations_patches[patchs_id, :, :],
+    )
 
 
 def retrain_loss(
@@ -149,7 +165,9 @@ def retrain_loss(
     annotation_loss = ce_annotation(prediction, tensor_annotations)
 
     ce_initial_prediction = nn.CrossEntropyLoss()
-    regularization_loss = ce_initial_prediction(last_prediction, initial_prediction)
+    regularization_loss = ce_initial_prediction(
+        last_prediction, initial_prediction
+    )
 
     loss = annotation_loss + (0.1 * regularization_loss)
 

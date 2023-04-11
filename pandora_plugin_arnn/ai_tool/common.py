@@ -27,7 +27,9 @@ from itertools import product
 import numpy as np
 
 
-def patch_image(data: np.ndarray, patch_size: int, overlaps: int = 0) -> np.ndarray:
+def patch_image(
+    data: np.ndarray, patch_size: int, overlaps: int = 0
+) -> np.ndarray:
     """
     Extract patches from image with deep copy
 

@@ -29,7 +29,9 @@ import numpy as np
 from .common import patch_image
 
 
-def prediction(model_dataset: xr.Dataset, model: torch.nn.Module, device: torch.device) -> None:
+def prediction(
+    model_dataset: xr.Dataset, model: torch.nn.Module, device: torch.device
+) -> None:
     """
     Makes a prediction using neural network model
 
@@ -48,7 +50,9 @@ def prediction(model_dataset: xr.Dataset, model: torch.nn.Module, device: torch.
 
     # Patches image
     overlaps = 0
-    patches = patch_image(model_dataset["im"].data, patch_size, overlaps=overlaps)
+    patches = patch_image(
+        model_dataset["im"].data, patch_size, overlaps=overlaps
+    )
 
     # Apply transformation
     patches = model.transform_patches(patches)  # type: ignore

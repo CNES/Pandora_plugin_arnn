@@ -59,7 +59,7 @@ venv: check ## create virtualenv in PLUGIN_ARNN_VENV directory if not exists
 
 .PHONY: install
 install: venv ## install pandora_plugin_arnn (pip editable mode) without plugins
-	@test -f ${PLUGIN_ARNN_VENV}/bin/pandora_plugin_arnn || ${PLUGIN_ARNN_VENV}/bin/pip install -e .[dev,docs,notebook]
+	@test -f ${PLUGIN_ARNN_VENV}/bin/pandora_plugin_arnn || ${PLUGIN_ARNN_VENV}/bin/pip install -e .[dev,docs]
 	@test -f .git/hooks/pre-commit || echo "  Install pre-commit hook"
 	@test -f .git/hooks/pre-commit || ${PLUGIN_ARNN_VENV}/bin/pre-commit install
 	@echo "PANDORA installed in dev mode in virtualenv ${PLUGIN_ARNN_VENV}"
@@ -69,7 +69,7 @@ install: venv ## install pandora_plugin_arnn (pip editable mode) without plugins
 
 .PHONY: test
 test: install ## run all tests + coverage (source venv before)
-	@${PLUGIN_ARNN_VENV}/bin/pytest -m "not notebook_tests" --junitxml=pytest-report.xml --cov-config=.coveragerc --cov-report xml --cov
+	@${PLUGIN_ARNN_VENV}/bin/pytest --junitxml=pytest-report.xml --cov-config=.coveragerc --cov-report xml --cov
 
 ## Code quality, linting section
 
@@ -146,11 +146,6 @@ clean-test:
 	@rm -f pylint-report.txt
 	@rm -f debug.log
 
-
-.PHONY: clean-notebook
-clean-notebook:
-	@echo "+ $@"
-	@find . -type d -name ".ipynb_checkpoints" -exec rm -fr {} +
 
 .PHONY: clean-mypy
 clean-mypy:

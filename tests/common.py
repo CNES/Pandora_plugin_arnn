@@ -25,7 +25,11 @@ import numpy as np
 
 
 def error(
-    data: np.ndarray, gt: np.ndarray, threshold: int, unknown_disparity: int = 0, flag_inverse_value: bool = True
+    data: np.ndarray,
+    gt: np.ndarray,
+    threshold: int,
+    unknown_disparity: int = 0,
+    flag_inverse_value: bool = True,
 ) -> float:
     """
     Percentage of bad pixels whose error is > threshold

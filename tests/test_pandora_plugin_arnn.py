@@ -33,7 +33,9 @@ from tests import common
 from pandora_plugin_arnn.pandora_plugin_arnn import semantic_segmentation
 
 
-def test_arnn_rgb_band_in_config_and_dataset(load_rgb_data, load_ground_truth, pandora_machine):
+def test_arnn_rgb_band_in_config_and_dataset(
+    load_rgb_data, load_ground_truth, pandora_machine
+):
     """
     Data with RGB bands in configuration and dataset
     """
@@ -51,16 +53,34 @@ def test_arnn_rgb_band_in_config_and_dataset(load_rgb_data, load_ground_truth, p
     user_cfg["pipeline"]["disparity"]["invalid_disparity"] = np.nan
 
     # Run the pandora pipeline
-    left, _ = pandora.run(pandora_machine, left_img, right_img, -60, 0, user_cfg["pipeline"])
+    left, _ = pandora.run(
+        pandora_machine, left_img, right_img, -60, 0, user_cfg["pipeline"]
+    )
 
     # Compares the calculated left disparity map with the ground truth
     # If the percentage of pixel errors is > 0.20, raise an error
-    if common.error(left["disparity_map"].data, left_gt["im"].data, 1, flag_inverse_value=False) > 0.55:
+    if (
+        common.error(
+            left["disparity_map"].data,
+            left_gt["im"].data,
+            1,
+            flag_inverse_value=False,
+        )
+        > 0.55
+    ):
         raise AssertionError
 
     # Compares the calculated left disparity map with the ground truth
     # If the percentage of pixel errors ( error if ground truth - calculate > 2) is > 0.15, raise an error
-    if common.error(left["disparity_map"].data, left_gt["im"].data, 2, flag_inverse_value=False) > 0.55:
+    if (
+        common.error(
+            left["disparity_map"].data,
+            left_gt["im"].data,
+            2,
+            flag_inverse_value=False,
+        )
+        > 0.55
+    ):
         raise AssertionError
 
 
@@ -84,7 +104,9 @@ def test_arnn_rgb_band_missing_in_config(load_rgb_data, pandora_machine):
 
     # The pandora pipeline should fail
     with pytest.raises(json_checker.MissKeyCheckerError):
-        _, _ = pandora.run(pandora_machine_, left_img, right_img, -60, 0, user_cfg["pipeline"])
+        _, _ = pandora.run(
+            pandora_machine_, left_img, right_img, -60, 0, user_cfg["pipeline"]
+        )
 
 
 def test_arnn_only_rg_band_in_config(load_rgb_data, pandora_machine):
@@ -101,14 +123,19 @@ def test_arnn_only_rg_band_in_config(load_rgb_data, pandora_machine):
     # Load config
     user_cfg = pandora.read_config_file("tests/conf/pipeline_arnn_basic.json")
     # Remove green band from configuration
-    user_cfg["pipeline"]["semantic_segmentation"]["RGB_bands"] = {"R": "r", "G": "g"}
+    user_cfg["pipeline"]["semantic_segmentation"]["RGB_bands"] = {
+        "R": "r",
+        "G": "g",
+    }
 
     # Load Pandora Machine
     pandora_machine_ = pandora_machine
 
     # The pandora pipeline should fail
     with pytest.raises(json_checker.DictCheckerError):
-        _, _ = pandora.run(pandora_machine_, left_img, right_img, -60, 0, user_cfg["pipeline"])
+        _, _ = pandora.run(
+            pandora_machine_, left_img, right_img, -60, 0, user_cfg["pipeline"]
+        )
 
 
 def test_arnn_rgb_band_missing_in_dataset(load_rgb_data, pandora_machine):
@@ -134,7 +161,9 @@ def test_arnn_rgb_band_missing_in_dataset(load_rgb_data, pandora_machine):
 
     # The pandora pipeline should fail
     with pytest.raises(SystemExit):
-        _, _ = pandora.run(pandora_machine_, left_img, right_img, -60, 0, user_cfg["pipeline"])
+        _, _ = pandora.run(
+            pandora_machine_, left_img, right_img, -60, 0, user_cfg["pipeline"]
+        )
 
 
 def test_compute_vegetation_map(load_rgb_data_with_classif):
@@ -168,7 +197,9 @@ def test_wrong_vegetation_class(pandora_machine):
     # Load config
     user_cfg = pandora.read_config_file("tests/conf/pipeline_arnn_basic.json")
     # Replace with wrong configuration
-    user_cfg["pipeline"]["semantic_segmentation"]["vegetation_band"]["classes"] = ["grass"]
+    user_cfg["pipeline"]["semantic_segmentation"]["vegetation_band"][
+        "classes"
+    ] = ["grass"]
 
     # Add inputs
     user_cfg["input"] = {
@@ -222,17 +253,35 @@ def test_vegetation_band_on_left_classif_without_validation(
 
     left, right = load_rgb_data_with_classif
 
-    left, _ = pandora.run(pandora_machine, left, right, -60, 0, user_cfg["pipeline"])
+    left, _ = pandora.run(
+        pandora_machine, left, right, -60, 0, user_cfg["pipeline"]
+    )
     left_gt, _ = load_ground_truth
 
     # Compares the calculated left disparity map with the ground truth
     # If the percentage of pixel errors is > 0.20, raise an error
-    if common.error(left["disparity_map"].data, left_gt["im"].data, 1, flag_inverse_value=False) > 0.55:
+    if (
+        common.error(
+            left["disparity_map"].data,
+            left_gt["im"].data,
+            1,
+            flag_inverse_value=False,
+        )
+        > 0.55
+    ):
         raise AssertionError
 
     # Compares the calculated left disparity map with the ground truth
     # If the percentage of pixel errors ( error if ground truth - calculate > 2) is > 0.15, raise an error
-    if common.error(left["disparity_map"].data, left_gt["im"].data, 2, flag_inverse_value=False) > 0.55:
+    if (
+        common.error(
+            left["disparity_map"].data,
+            left_gt["im"].data,
+            2,
+            flag_inverse_value=False,
+        )
+        > 0.55
+    ):
         raise AssertionError
 
 
@@ -298,17 +347,35 @@ def test_vegetation_band_on_left_and_right_classif_without_validation(
 
     left, right = load_rgb_data_with_classif
 
-    left, _ = pandora.run(pandora_machine, left, right, -60, 0, user_cfg["pipeline"])
+    left, _ = pandora.run(
+        pandora_machine, left, right, -60, 0, user_cfg["pipeline"]
+    )
     left_gt, _ = load_ground_truth
 
     # Compares the calculated left disparity map with the ground truth
     # If the percentage of pixel errors is > 0.20, raise an error
-    if common.error(left["disparity_map"].data, left_gt["im"].data, 1, flag_inverse_value=False) > 0.55:
+    if (
+        common.error(
+            left["disparity_map"].data,
+            left_gt["im"].data,
+            1,
+            flag_inverse_value=False,
+        )
+        > 0.55
+    ):
         raise AssertionError
 
     # Compares the calculated left disparity map with the ground truth
     # If the percentage of pixel errors ( error if ground truth - calculate > 2) is > 0.15, raise an error
-    if common.error(left["disparity_map"].data, left_gt["im"].data, 2, flag_inverse_value=False) > 0.55:
+    if (
+        common.error(
+            left["disparity_map"].data,
+            left_gt["im"].data,
+            2,
+            flag_inverse_value=False,
+        )
+        > 0.55
+    ):
         raise AssertionError
 
 
@@ -323,7 +390,10 @@ def test_vegetation_band_on_left_classif_with_validation(pandora_machine):
     user_cfg = pandora.read_config_file("tests/conf/pipeline_arnn_basic.json")
 
     # Add validation step
-    user_cfg["pipeline"]["validation"] = {"validation_method": "cross_checking", "cross_checking_threshold": 1}
+    user_cfg["pipeline"]["validation"] = {
+        "validation_method": "cross_checking",
+        "cross_checking_threshold": 1,
+    }
     user_cfg["pipeline"]["right_disp_map"] = {"method": "accurate"}
 
     # Add inputs
@@ -357,7 +427,10 @@ def test_vegetation_band_on_left_and_right_classif_with_validation(
     user_cfg = pandora.read_config_file("tests/conf/pipeline_arnn_basic.json")
 
     # Add validation step
-    user_cfg["pipeline"]["validation"] = {"validation_method": "cross_checking", "cross_checking_threshold": 1}
+    user_cfg["pipeline"]["validation"] = {
+        "validation_method": "cross_checking",
+        "cross_checking_threshold": 1,
+    }
     user_cfg["pipeline"]["right_disp_map"] = {"method": "accurate"}
 
     # Add inputs
@@ -382,17 +455,35 @@ def test_vegetation_band_on_left_and_right_classif_with_validation(
 
     left, right = load_rgb_data_with_classif
 
-    left, right = pandora.run(pandora_machine, left, right, -60, 0, user_cfg["pipeline"])
+    left, right = pandora.run(
+        pandora_machine, left, right, -60, 0, user_cfg["pipeline"]
+    )
     left_gt, right_gt = load_ground_truth
 
     # Compares the calculated left disparity map with the ground truth
     # If the percentage of pixel errors is > 0.20, raise an error
-    if common.error(left["disparity_map"].data, left_gt["im"].data, 1, flag_inverse_value=False) > 0.55:
+    if (
+        common.error(
+            left["disparity_map"].data,
+            left_gt["im"].data,
+            1,
+            flag_inverse_value=False,
+        )
+        > 0.55
+    ):
         raise AssertionError
 
     # Compares the calculated left disparity map with the ground truth
     # If the percentage of pixel errors ( error if ground truth - calculate > 2) is > 0.15, raise an error
-    if common.error(left["disparity_map"].data, left_gt["im"].data, 2, flag_inverse_value=False) > 0.55:
+    if (
+        common.error(
+            left["disparity_map"].data,
+            left_gt["im"].data,
+            2,
+            flag_inverse_value=False,
+        )
+        > 0.55
+    ):
         raise AssertionError
 
     # Compares the calculated left disparity map with the ground truth

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf8
 #
-# Copyright (C) 2022 CNES.
+# Copyright (C) 2023 CNES.
 #
 # This file is part of pandora_plugin_arnn
 #
@@ -26,18 +26,16 @@ from itertools import product
 import torch
 import xarray as xr
 import numpy as np
-from .common import patch_image
+from .common import extract_patches
 
 
-def prediction(
-    model_dataset: xr.Dataset, model: torch.nn.Module, device: torch.device
-) -> None:
+def prediction(image_dataset: xr.Dataset, model: torch.nn.Module, device: torch.device) -> None:
     """
     Makes a prediction using neural network model
 
-    :param model_dataset: Input image xarray.DataSet containing the variables :
+    :param image_dataset: Input image xarray.DataSet containing the variables :
             - im : 3D (band, row, col) xarray.DataArray float32
-    :type model_dataset: xr.Dataset
+    :type image_dataset: xr.Dataset
     :param model: Model object
     :type model: torch.nn.Module
     :param device: torch device to use
@@ -45,22 +43,20 @@ def prediction(
     :return: None
     """
 
-    # Load and check python module
+    # Load patch size
     patch_size = model.get_patch_size()  # type: ignore
 
     # Patches image
     overlaps = 0
-    patches = patch_image(
-        model_dataset["im"].data, patch_size, overlaps=overlaps
-    )
+    patches = extract_patches(image_dataset["im"].data, patch_size, overlaps=overlaps)
 
-    # Apply transformation
+    # Apply model's transformation
     patches = model.transform_patches(patches)  # type: ignore
     patches = patches.to(device)
 
-    # Predict and reconstruct image
+    # Instantiate parameters
     nb_classes = len(model.get_classes())  # type: ignore
-    _, nb_row, nb_col = model_dataset["im"].shape
+    _, nb_row, nb_col = image_dataset["im"].shape
 
     # Indices of each patch
     offset_col = np.append(
@@ -73,7 +69,7 @@ def prediction(
     )
     offset = product(offset_row, offset_col)
 
-    # Make prediction and reconstrut initial 2D image
+    # Make prediction and reconstruct initial 2D image
     pred = np.zeros((nb_classes, nb_row, nb_col), dtype=np.float32)
     with torch.no_grad():
         for patch_idx, (row_off, col_off) in enumerate(offset):
@@ -91,9 +87,9 @@ def prediction(
 
     pred = np.argmax(pred, axis=0).astype(np.float32)
 
-    # Add prediction to xarray dataset
-    model_dataset["initial_prediction"] = xr.DataArray(
+    # Add prediction to xarray image_dataset
+    image_dataset["initial_prediction"] = xr.DataArray(
         data=pred,
-        coords=[model_dataset.coords["row"], model_dataset.coords["col"]],
+        coords=[image_dataset.coords["row"], image_dataset.coords["col"]],
         dims=["row", "col"],
     )

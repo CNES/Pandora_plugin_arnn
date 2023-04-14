@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf8
 #
-# Copyright (C) 2022 CNES.
+# Copyright (C) 2023 CNES.
 #
 # This file is part of pandora_plugin_arnn
 #
@@ -33,9 +33,7 @@ from tests import common
 from pandora_plugin_arnn.pandora_plugin_arnn import semantic_segmentation
 
 
-def test_arnn_rgb_band_in_config_and_dataset(
-    load_rgb_data, load_ground_truth, pandora_machine
-):
+def test_arnn_rgb_band_in_config_and_dataset(load_rgb_data, load_ground_truth, pandora_machine):
     """
     Data with RGB bands in configuration and dataset
     """
@@ -53,9 +51,7 @@ def test_arnn_rgb_band_in_config_and_dataset(
     user_cfg["pipeline"]["disparity"]["invalid_disparity"] = np.nan
 
     # Run the pandora pipeline
-    left, _ = pandora.run(
-        pandora_machine, left_img, right_img, -60, 0, user_cfg["pipeline"]
-    )
+    left, _ = pandora.run(pandora_machine, left_img, right_img, -60, 0, user_cfg["pipeline"])
 
     # Compares the calculated left disparity map with the ground truth
     # If the percentage of pixel errors is > 0.20, raise an error
@@ -104,9 +100,7 @@ def test_arnn_rgb_band_missing_in_config(load_rgb_data, pandora_machine):
 
     # The pandora pipeline should fail
     with pytest.raises(json_checker.MissKeyCheckerError):
-        _, _ = pandora.run(
-            pandora_machine_, left_img, right_img, -60, 0, user_cfg["pipeline"]
-        )
+        _, _ = pandora.run(pandora_machine_, left_img, right_img, -60, 0, user_cfg["pipeline"])
 
 
 def test_arnn_only_rg_band_in_config(load_rgb_data, pandora_machine):
@@ -133,9 +127,7 @@ def test_arnn_only_rg_band_in_config(load_rgb_data, pandora_machine):
 
     # The pandora pipeline should fail
     with pytest.raises(json_checker.DictCheckerError):
-        _, _ = pandora.run(
-            pandora_machine_, left_img, right_img, -60, 0, user_cfg["pipeline"]
-        )
+        _, _ = pandora.run(pandora_machine_, left_img, right_img, -60, 0, user_cfg["pipeline"])
 
 
 def test_arnn_rgb_band_missing_in_dataset(load_rgb_data, pandora_machine):
@@ -161,12 +153,10 @@ def test_arnn_rgb_band_missing_in_dataset(load_rgb_data, pandora_machine):
 
     # The pandora pipeline should fail
     with pytest.raises(SystemExit):
-        _, _ = pandora.run(
-            pandora_machine_, left_img, right_img, -60, 0, user_cfg["pipeline"]
-        )
+        _, _ = pandora.run(pandora_machine_, left_img, right_img, -60, 0, user_cfg["pipeline"])
 
 
-def test_compute_vegetation_map(load_rgb_data_with_classif):
+def test_merge_into_vegetation_map(load_rgb_data_with_classif):
     """
     Test the compute_vegetation_map function
     """
@@ -180,7 +170,7 @@ def test_compute_vegetation_map(load_rgb_data_with_classif):
         }
     )
 
-    vegetation_map = ssgm_.compute_vegetation_map(left)
+    vegetation_map = ssgm_.merge_into_vegetation_map(left)
 
     # ground truth
     gt_vegetation_map = np.load("tests/outputs/fused_classif.npy")
@@ -197,9 +187,7 @@ def test_wrong_vegetation_class(pandora_machine):
     # Load config
     user_cfg = pandora.read_config_file("tests/conf/pipeline_arnn_basic.json")
     # Replace with wrong configuration
-    user_cfg["pipeline"]["semantic_segmentation"]["vegetation_band"][
-        "classes"
-    ] = ["grass"]
+    user_cfg["pipeline"]["semantic_segmentation"]["vegetation_band"]["classes"] = ["grass"]
 
     # Add inputs
     user_cfg["input"] = {
@@ -253,9 +241,7 @@ def test_vegetation_band_on_left_classif_without_validation(
 
     left, right = load_rgb_data_with_classif
 
-    left, _ = pandora.run(
-        pandora_machine, left, right, -60, 0, user_cfg["pipeline"]
-    )
+    left, _ = pandora.run(pandora_machine, left, right, -60, 0, user_cfg["pipeline"])
     left_gt, _ = load_ground_truth
 
     # Compares the calculated left disparity map with the ground truth
@@ -347,9 +333,7 @@ def test_vegetation_band_on_left_and_right_classif_without_validation(
 
     left, right = load_rgb_data_with_classif
 
-    left, _ = pandora.run(
-        pandora_machine, left, right, -60, 0, user_cfg["pipeline"]
-    )
+    left, _ = pandora.run(pandora_machine, left, right, -60, 0, user_cfg["pipeline"])
     left_gt, _ = load_ground_truth
 
     # Compares the calculated left disparity map with the ground truth
@@ -455,9 +439,7 @@ def test_vegetation_band_on_left_and_right_classif_with_validation(
 
     left, right = load_rgb_data_with_classif
 
-    left, right = pandora.run(
-        pandora_machine, left, right, -60, 0, user_cfg["pipeline"]
-    )
+    left, right = pandora.run(pandora_machine, left, right, -60, 0, user_cfg["pipeline"])
     left_gt, right_gt = load_ground_truth
 
     # Compares the calculated left disparity map with the ground truth

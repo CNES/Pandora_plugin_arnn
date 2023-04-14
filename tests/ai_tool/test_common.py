@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf8
 #
-# Copyright (C) 2022 CNES.
+# Copyright (C) 2023 CNES.
 #
 # This file is part of pandora_plugin_arnn
 #
@@ -42,7 +42,7 @@ def test_image_patch():
     # Hence we should obtain 4 * 5 = 20 patches of size 100*100
     # The corresponding offsets are col : [0, 100, 200, 300, 350], row : [0, 100, 200, 275]
     # Compute patches using the patch_image function
-    output_patches = common.patch_image(data, 100)
+    output_patches = common.extract_patches(data, 100)
     # Check that the output_patches size is the same as gt
     gt_shape = (20, 100, 100)
     assert output_patches.shape == gt_shape
@@ -76,7 +76,7 @@ def test_image_patch_overlaps():
     # Hence we should obtain 4 * 5 = 20 patches of size 100*100
     # The corresponding offsets are col : [0, 95, 190, 280, 350], row : [0, 95, 190, 275]
     # Compute patches using the patch_image function
-    output_patches = common.patch_image(data, 100, 5)
+    output_patches = common.extract_patches(data, 100, 5)
     # Check that the output_patches size is the same as gt
     gt_shape = (20, 100, 100)
     assert output_patches.shape == gt_shape
@@ -109,7 +109,7 @@ def test_image_patch_multiband():
     # Hence we should obtain 4 * 5 = 20 patches of size 100*100 for each band
     # The corresponding offsets are col : [0, 100, 200, 300, 350], row : [0, 100, 200, 275]
     # Compute patches using the patch_image function
-    output_patches = common.patch_image(data, 100)
+    output_patches = common.extract_patches(data, 100)
     # Check that the output_patches size is the same as gt
     gt_shape = (20, 3, 100, 100)
     assert output_patches.shape == gt_shape

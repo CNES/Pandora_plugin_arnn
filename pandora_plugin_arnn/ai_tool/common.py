@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf8
 #
-# Copyright (C) 2022 CNES.
+# Copyright (C) 2023 CNES.
 #
 # This file is part of pandora_plugin_arnn
 #
@@ -27,20 +27,18 @@ from itertools import product
 import numpy as np
 
 
-def patch_image(
-    data: np.ndarray, patch_size: int, overlaps: int = 0
-) -> np.ndarray:
+def extract_patches(data: np.ndarray, patch_size: int, overlaps: int = 0) -> np.ndarray:
     """
     Extract patches from image with deep copy
 
-    :param data: 2D or 3D np.ndarray
+    :param data: 2D (row, col) or 3D (band, row, col) np.ndarray
     :type data: np.ndarray
     :param patch_size: Patch size
     :type patch_size: int
     :param overlaps: Overlaps
     :type overlaps: int
     :return: Patches
-    :rtype: np.array (number of patches, band, patch_size, patch_size)
+    :rtype: np.array (number of patches, number of band, patch_size, patch_size)
     """
     patches = []
 

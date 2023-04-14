@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf8
 #
-# Copyright (C) 2022 CNES.
+# Copyright (C) 2023 CNES.
 #
 # This file is part of pandora_plugin_arnn
 #
@@ -29,45 +29,45 @@ import torch
 import xarray as xr
 from torch import nn
 
-from .common import patch_image
+from .common import extract_patches
 from .prediction import prediction
+
+_REGULARIZATION_COEFF = 0.1
 
 
 def retrain(
     model: torch.nn.Module,
-    model_dataset: xr.Dataset,
+    image_dataset: xr.Dataset,
     device: torch.device,
     retrain_epoch: int = 10,
     ignore_index: int = -1,
 ) -> xr.Dataset:
     """
-    Retrain network with user annotation
+    Retrain network with annotation
 
     :param model: Model object
     :type model: torch.nn.Module
-    :param model_dataset: Input image xarray.DataSet containing the variables :
+    :param image_dataset: Input image xarray.DataSet containing the variables :
             - im : 3D (band, row, col) xarray.DataArray float32
             - initial_prediction : argmax of the prediction : 2D xarray.DataArray float32
             - annotation : 2D (row, col) xarray.DataArray float32
-    :type model_dataset: xr.Dataset
+    :type image_dataset: xr.Dataset
     :param device: torch device to use
     :type device: torch.device
     :param retrain_epoch: number of retrain epoch
     :type retrain_epoch: int
     :param ignore_index: index to ignore in annotations when retraining
     :type ignore_index: int
-    :return: Initial prediction after retraining, input image xarray.DataSet containing the variables :
+    :return: Retraining prediction, input image xarray.Dataset containing the variables :
             - im : 3D (band, row, col) xarray.DataArray float32
             - initial_prediction : argmax of the prediction : 2D xarray.DataArray float32
             - annotation : 2D (row, col) xarray.DataArray float32
     """
     # Make initial prediction if needed
-    if "initial_prediction" not in model_dataset:
-        prediction(model_dataset, model, device)
+    if "initial_prediction" not in image_dataset:
+        prediction(image_dataset, model, device)
 
-    image_patches, initial_patches, annotations_patches = prepare_retrain_data(
-        model, model_dataset
-    )
+    image_patches, initial_patches, annotations_patches = prepare_retrain_data(model, image_dataset)
     image_patches = image_patches.to(device)
 
     for _ in range(retrain_epoch):
@@ -82,23 +82,25 @@ def retrain(
         model.backward(loss)  # type: ignore
 
     # Make new prediction
-    prediction(model_dataset, model, device)
+    prediction(image_dataset, model, device)
 
-    return model_dataset
+    return image_dataset
 
 
 def prepare_retrain_data(
-    model: torch.nn.Module, model_dataset: xr.Dataset, ignore_index: int = -1
+    model: torch.nn.Module, image_dataset: xr.Dataset, ignore_index: int = -1
 ) -> Tuple[torch.Tensor, np.ndarray, np.ndarray]:
-    """Patches images and annotations before retrain. Patches that do not contain annotations are deleted.
+    """
+    Creates normalized patches images with annotations before retrain.
+    Save only annotated patches.
 
     :param model: Model object
     :type model: torch.nn.Module
-    :param model_dataset: Input image xarray.DataSet containing the variables :
+    :param image_dataset: Input image xarray.DataSet containing the variables :
             - im : 3D (band, row, col) xarray.DataArray float32
             - initial_prediction : argmax of the prediction : 2D xarray.DataArray float32
             - annotation : 2D (row, col) xarray.DataArray float32
-    :type model_dataset: xr.Dataset
+    :type image_dataset: xr.Dataset
     :param ignore_index: index to ignore in annotations when retraining
     :type ignore_index: int
     :return: Deep copy of image, initial prediction and annotation patches
@@ -107,16 +109,12 @@ def prepare_retrain_data(
     patch_size = model.get_patch_size()  # type: ignore
 
     # Patches image and annotations
-    image_patches = patch_image(model_dataset["im"].data, patch_size)
+    image_patches = extract_patches(image_dataset["im"].data, patch_size)
     image_patches = model.transform_patches(image_patches)  # type: ignore
 
-    initial_patches = patch_image(
-        model_dataset["initial_prediction"].data, patch_size
-    )
+    initial_patches = extract_patches(image_dataset["initial_prediction"].data, patch_size)
 
-    annotations_patches = patch_image(
-        model_dataset["annotation"].data, patch_size
-    )
+    annotations_patches = extract_patches(image_dataset["annotation"].data, patch_size)
 
     # Remove patches that do not contain annotations
     patchs_id = []
@@ -143,7 +141,7 @@ def retrain_loss(
 
     :param last_prediction: last network prediction
     :type last_prediction: Tensor of shape (nb patch, network output, row, col)
-    :param annotations: Ground Truth eparse annotation
+    :param annotations: Ground truth sparse annotation
     :type annotations: np array (nb patch, row, col))
     :param ignore_index: index to ignore in annotations when retraining
     :type ignore_index: int
@@ -165,10 +163,8 @@ def retrain_loss(
     annotation_loss = ce_annotation(prediction, tensor_annotations)
 
     ce_initial_prediction = nn.CrossEntropyLoss()
-    regularization_loss = ce_initial_prediction(
-        last_prediction, initial_prediction
-    )
+    regularization_loss = ce_initial_prediction(last_prediction, initial_prediction)
 
-    loss = annotation_loss + (0.1 * regularization_loss)
+    loss = annotation_loss + (_REGULARIZATION_COEFF * regularization_loss)
 
     return loss

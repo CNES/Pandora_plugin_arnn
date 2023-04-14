@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf8
 #
-# Copyright (C) 2022 CNES.
+# Copyright (C) 2023 CNES.
 #
 # This file is part of pandora_plugin_arnn
 #
@@ -84,12 +84,8 @@ def load_rgb_data():
     """
 
     # Cones images
-    left_data = pandora.read_img(
-        "tests/inputs/left_rgb.tif", no_data=np.nan, mask=None
-    )
-    right_data = pandora.read_img(
-        "tests/inputs/right_rgb.tif", no_data=np.nan, mask=None
-    )
+    left_data = pandora.read_img("tests/inputs/left_rgb.tif", no_data=np.nan, mask=None)
+    right_data = pandora.read_img("tests/inputs/right_rgb.tif", no_data=np.nan, mask=None)
 
     return left_data, right_data
 
@@ -124,12 +120,8 @@ def load_ground_truth():
     """
 
     # Cones images
-    left_data = pandora.read_img(
-        "tests/outputs/gt_disp_left.tif", no_data=np.nan, mask=None
-    )
-    right_data = pandora.read_img(
-        "tests/outputs/gt_disp_right.tif", no_data=np.nan, mask=None
-    )
+    left_data = pandora.read_img("tests/outputs/gt_disp_left.tif", no_data=np.nan, mask=None)
+    right_data = pandora.read_img("tests/outputs/gt_disp_right.tif", no_data=np.nan, mask=None)
 
     return left_data, right_data
 

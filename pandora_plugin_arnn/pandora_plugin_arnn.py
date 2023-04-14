@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf8
 #
-# Copyright (C) 2022 CNES.
+# Copyright (C) 2023 CNES.
 #
 # This file is part of pandora_plugin_arnn
 #
@@ -54,6 +54,8 @@ class ARNN(semantic_segmentation.AbstractSemanticSegmentation):
 
     # Default configuration, do not change these values
     _REFINEMENT_ = False
+    _GROUND_THRESHOLD = 0
+    _CONFIDENCE_TRESHOLD = 0.90
 
     def __init__(self, **cfg: Dict[str, Union[str, int]]) -> None:
         """
@@ -66,9 +68,7 @@ class ARNN(semantic_segmentation.AbstractSemanticSegmentation):
         self._rgb_bands = self.cfg["RGB_bands"]
         self._vegetation_band = self.cfg["vegetation_band"]
 
-    def check_conf(
-        self, **cfg: Dict[str, Union[str, int]]
-    ) -> Dict[str, Union[str, int]]:
+    def check_conf(self, **cfg: Dict[str, Union[str, int]]) -> Dict[str, Union[str, int]]:
         """
         Add default values to the dictionary if there are missing elements and check if the dictionary is correct
 
@@ -103,9 +103,7 @@ class ARNN(semantic_segmentation.AbstractSemanticSegmentation):
         """
         print("Building semantic segmentation")
 
-    def compute_semantic_segmentation(
-        self, cv: xr.Dataset, img_left: xr.Dataset, img_right: xr.Dataset
-    ) -> xr.Dataset:
+    def compute_semantic_segmentation(self, cv: xr.Dataset, img_left: xr.Dataset, img_right: xr.Dataset) -> xr.Dataset:
         """
         Compute building semantic segmentation
 
@@ -127,17 +125,14 @@ class ARNN(semantic_segmentation.AbstractSemanticSegmentation):
         :return: The building segmentation in the left image dataset with the data variables:
 
                 - im : 3D (band, row, col) xarray.DataArray
-                - msk (optional): 2D (row, col) xarray.DataArray
-                - initial : 2D (row, col) xarray.DataArray building segmentation
+                - internal : 2D (row, col) xarray.DataArray building segmentation
         :rtype: xarray.Dataset
         """
         # Load pretrained building segmentation model
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         model = BuildingSegmentation()
         model = model.eval()
-        pretrained_path = files("pandora_plugin_arnn.model").joinpath(
-            "pretrained_building_segmentation_model.pt"
-        )
+        pretrained_path = files("pandora_plugin_arnn.model").joinpath("pretrained_building_segmentation_model.pt")
         model.load_state_dict(torch.load(pretrained_path))
         model = model.to(device)
 
@@ -155,9 +150,7 @@ class ARNN(semantic_segmentation.AbstractSemanticSegmentation):
 
         for indx, band in enumerate(["R", "G", "B"]):
             band_index = list(img_left.band.data).index(self._rgb_bands[band])  # type: ignore
-            rgb_img[indx, begin_row:, begin_col:] = np.copy(
-                img_left["im"].data[band_index, :, :]
-            )
+            rgb_img[indx, begin_row:, begin_col:] = np.copy(img_left["im"].data[band_index, :, :])
 
         model_dataset = xr.Dataset(
             {"im": (["band", "row", "col"], rgb_img.astype(np.float32))},
@@ -191,15 +184,11 @@ class ARNN(semantic_segmentation.AbstractSemanticSegmentation):
             )
 
             # Retrain the network with the annotation map and make a new prediction
-            model_dataset = retrain(
-                model, model_dataset, device, retrain_epoch=1, ignore_index=-1
-            )
+            model_dataset = retrain(model, model_dataset, device, retrain_epoch=1, ignore_index=-1)
 
         # Recrop the segmentation to original image size
         img_left["internal"] = xr.DataArray(
-            data=model_dataset["initial_prediction"].data[
-                begin_row:, begin_col:
-            ],
+            data=model_dataset["initial_prediction"].data[begin_row:, begin_col:],
             coords=[img_left.coords["row"], img_left.coords["col"]],
             dims=["row", "col"],
         )
@@ -215,6 +204,16 @@ class ARNN(semantic_segmentation.AbstractSemanticSegmentation):
     ) -> np.ndarray:
         """
         Create an annotation card to retrain the model
+
+        Algorithm :
+            entry:
+                confidence_map : array
+                confidence threshold : float
+                ground threshold : float
+            start:
+                if disp > ground_threshold and confidence threshold:
+                    if pixel is not vegetation:
+                        Automatic annotation as building
 
         :param cv: the cost volume, with the data variables:
 
@@ -233,34 +232,28 @@ class ARNN(semantic_segmentation.AbstractSemanticSegmentation):
         :type img_right: xarray
         :param initial_prediction: First prediction of the model
         :type initial_prediction: 2D (row, col) np.array
-        :return: The building segmentation in the left image dataset with the data variables:
-
-                - im : 3D (band, row, col) xarray.DataArray
-                - msk (optional): 2D (row, col) xarray.DataArray
-                - initial : 2D (row, col) xarray.DataArray building segmentation
+        :return: Annotation map
+                - map: 2D (row, col) xarray.DataArray
         :rtype: xarray.Dataset
         """
         # Apply WTA on cost volume
-        wta = AbstractDisparity(
-            **{"disparity_method": "wta", "invalid_disparity": -9999}
-        )
+        wta = AbstractDisparity(**{"disparity_method": "wta", "invalid_disparity": -9999})
         disp = wta.to_disp(cv, img_left)
         wta.validity_mask(disp, img_left, img_right, cv)
 
-        # Find the threshold on the disparity map to dissociate the ground from the overground
-        ground_threshold = self.ground_extraction(disp)
-
         # If Pandora has not calculated confidence, we consider that all points are confident
-        ambiguity = np.ones(
+        confidence = np.ones(
             (len(img_left.coords["row"]), len(img_left.coords["col"])),
             dtype=np.float32,
         )
         if (
             "confidence_measure" in cv
-            and "ambiguity_confidence" in cv.coords["indicator"]
+            and "confidence_from_ambiguity" in cv.coords["indicator"]
         ):
-            ambiguity = (
-                cv["confidence_measure"].loc[:, :, "ambiguity_confidence"].data
+            confidence = (
+                cv["confidence_measure"]
+                .loc[:, :, "confidence_from_ambiguity"]
+                .data
             )
 
         # Create annotation map
@@ -269,19 +262,21 @@ class ARNN(semantic_segmentation.AbstractSemanticSegmentation):
         # Extract overground pixels
         annotation[
             np.where(
-                (disp["disparity_map"].data <= ground_threshold)
-                & (ambiguity >= 0.90)
+                (disp["disparity_map"].data <= self._GROUND_THRESHOLD)
+                & (confidence >= self._CONFIDENCE_TRESHOLD)
             )
         ] = 1
+
         # Extract non-buildings pixels
         annotation[
             np.where(
-                (disp["disparity_map"].data > (ground_threshold + 1))
-                & (ambiguity >= 0.90)
+                (disp["disparity_map"].data > (self._GROUND_THRESHOLD + 1))
+                & (confidence >= self._CONFIDENCE_TRESHOLD)
                 & (initial_prediction == 1)
             )
         ] = 0
-        # Remove invalid pixels
+
+        # Vegetation and invalid pixels are set to -1
         annotation[np.where(disp["disparity_map"].data == -9999)] = -1
         invalids = (
             cst.PANDORA_MSK_PIXEL_LEFT_NODATA_OR_BORDER
@@ -293,32 +288,19 @@ class ARNN(semantic_segmentation.AbstractSemanticSegmentation):
         annotation[np.where((disp["validity_mask"].data & invalids) != 0)] = -1
 
         # Find vegetation
-        vegetation_map = self.compute_vegetation_map(img_left)
+        vegetation_map = self.merge_into_vegetation_map(img_left)
 
         # Dilates the vegetation map and remove vegetation pixel in annotation map
-        vegetation_map = ndimage.binary_dilation(
-            vegetation_map, structure=np.ones((10, 10))
-        ).astype(vegetation_map.dtype)
+        vegetation_map = ndimage.binary_dilation(vegetation_map, structure=np.ones((10, 10))).astype(
+            vegetation_map.dtype
+        )
         annotation[vegetation_map == 1] = -1
 
         return annotation
 
-    @staticmethod
-    def ground_extraction(wta: xr.Dataset):
+    def merge_into_vegetation_map(self, img_left: xr.Dataset):
         """
-        KMeans for ground/over-ground point classification
-
-        :param wta: Disparities
-        :type wta: 2D (row, col) np.array
-        """
-        # Copy create to avoid pylint error with stub function
-        _ = np.copy(wta)
-        # Returns null value for now
-        return 0
-
-    def compute_vegetation_map(self, img_left: xr.Dataset):
-        """
-        Compute vegetation map
+        Stack vegetation map
 
         :param img_left: left Dataset image containing :
 
@@ -331,10 +313,11 @@ class ARNN(semantic_segmentation.AbstractSemanticSegmentation):
         # Copy create to avoid pylint error with stub function
         vegetation_map = np.zeros((img_left.dims["row"], img_left.dims["col"]))
 
-        # vegetation map (0 = not vegetation, 1 = vegetation)
+        # Create a vegetation map based on all selected masks.
         for _, class_name in enumerate(self._vegetation_band["classes"]):  # type: ignore
             band_index = list(img_left.band_classif.data).index(class_name)
             classif = img_left["classif"][band_index]
+            # vegetation map (0 = not vegetation, 1 = vegetation)
             vegetation_map = np.logical_or(vegetation_map, classif)
 
         vegetation_map = vegetation_map.astype(int)

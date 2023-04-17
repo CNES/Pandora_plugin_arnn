@@ -67,7 +67,9 @@ def retrain(
     if "initial_prediction" not in image_dataset:
         prediction(image_dataset, model, device)
 
-    image_patches, initial_patches, annotations_patches = prepare_retrain_data(model, image_dataset)
+    image_patches, initial_patches, annotations_patches = prepare_retrain_data(
+        model, image_dataset
+    )
     image_patches = image_patches.to(device)
 
     for _ in range(retrain_epoch):
@@ -112,9 +114,13 @@ def prepare_retrain_data(
     image_patches = extract_patches(image_dataset["im"].data, patch_size)
     image_patches = model.transform_patches(image_patches)  # type: ignore
 
-    initial_patches = extract_patches(image_dataset["initial_prediction"].data, patch_size)
+    initial_patches = extract_patches(
+        image_dataset["initial_prediction"].data, patch_size
+    )
 
-    annotations_patches = extract_patches(image_dataset["annotation"].data, patch_size)
+    annotations_patches = extract_patches(
+        image_dataset["annotation"].data, patch_size
+    )
 
     # Remove patches that do not contain annotations
     patchs_id = []
@@ -163,7 +169,9 @@ def retrain_loss(
     annotation_loss = ce_annotation(prediction, tensor_annotations)
 
     ce_initial_prediction = nn.CrossEntropyLoss()
-    regularization_loss = ce_initial_prediction(last_prediction, initial_prediction)
+    regularization_loss = ce_initial_prediction(
+        last_prediction, initial_prediction
+    )
 
     loss = annotation_loss + (_REGULARIZATION_COEFF * regularization_loss)
 

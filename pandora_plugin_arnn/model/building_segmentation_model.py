@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf8
 #
-# Copyright (C) 2022 CNES.
+# Copyright (C) 2023 CNES.
 #
 # This file is part of pandora_plugin_arnn
 #
@@ -21,9 +21,10 @@
 """
 This module contains building segmentation neural network.
 """
+from typing import Tuple, Union
 
-import torch
 import numpy as np
+import torch
 from torch import nn, optim
 
 
@@ -33,14 +34,14 @@ class BasicBlock(nn.Module):
 
     def __init__(
         self,
-        in_planes,
-        out_planes,
-        kernel_size,
-        stride=1,
-        padding=0,
-        groups=1,
-        bias=False,
-        conv="classic",
+        in_planes: int,
+        out_planes: int,
+        kernel_size: Union[int, Tuple[int, int]],
+        stride: Union[int, Tuple[int, int]] = 1,
+        padding: int = 0,
+        groups: int = 1,
+        bias: bool = False,
+        conv: str = "classic",
     ):
         super().__init__()
         if conv == "classic":
@@ -67,19 +68,19 @@ class BasicBlock(nn.Module):
             self.bn2 = nn.BatchNorm2d(out_planes)
 
         self.downsample = None
-        if stride > 1 or in_planes == 12:
+        if stride > 1 or in_planes == 12:  # type: ignore
             self.downsample = nn.Sequential(
                 nn.Conv2d(in_planes, out_planes, kernel_size=1, stride=stride, bias=False),
                 nn.BatchNorm2d(out_planes),
             )
         self.conv_type = conv
 
-    def forward(self, input_):
+    def forward(self, input_: torch.Tensor):
         """
         Forward method
 
-        :param input_: torch 4D array (nb patch, 5, 1024, 1024)
-        :return: network prediction torch 4D array (nb patch, 2, 1024, 1024)
+        :param input_: torch 4D array (nb patch, nb channel(5), height(1024), width(1024))
+        :return: network prediction torch 4D array (nb patch, nb channel(2), height, width)
         """
         residual = input_
 
@@ -104,16 +105,16 @@ class Encoder34(nn.Module):
 
     def __init__(
         self,
-        layer,
-        in_planes,
-        out_planes,
-        kernel_size,
-        stride=1,
-        padding=0,
-        groups=1,
-        bias=False,
-        conv="classic",
-        drop=False,
+        layer: int,
+        in_planes: int,
+        out_planes: int,
+        kernel_size: Union[int, Tuple[int, int]],
+        stride: Union[int, Tuple[int, int]] = 1,
+        padding: int = 0,
+        groups: int = 1,
+        bias: bool = False,
+        conv: str = "classic",
+        drop: bool = False,
     ):
         super().__init__()
         self.layer = layer
@@ -135,12 +136,12 @@ class Encoder34(nn.Module):
             self.block6 = BasicBlock(out_planes, out_planes, kernel_size, 1, padding, groups, bias, conv)
         self.drop = drop
 
-    def forward(self, input_):
+    def forward(self, input_: torch.Tensor):
         """
         Forward method
 
-        :param input_: torch 4D array (nb patch, 5, 1024, 1024)
-        :return: network prediction torch 4D array (nb patch, 2, 1024, 1024)
+        :param input_: torch 4D array (nb patch, nb channel(5), height(1024), width(1024))
+        :return: network prediction torch 4D array (nb patch, nb channel(2), height, width)
         """
         if self.drop:
             input_ = nn.Dropout2d(p=0.05)(input_)
@@ -161,14 +162,14 @@ class Decoder(nn.Module):
 
     def __init__(
         self,
-        in_planes,
-        out_planes,
-        kernel_size,
-        stride=1,
-        padding=0,
-        output_padding=0,
-        bias=False,
-        drop=False,
+        in_planes: int,
+        out_planes: int,
+        kernel_size: Union[int, Tuple[int, int]],
+        stride: Union[int, Tuple[int, int]] = 1,
+        padding: int = 0,
+        output_padding: int = 0,
+        bias: bool = False,
+        drop: bool = False,
     ):
         super().__init__()
         self.conv1 = nn.Sequential(
@@ -196,12 +197,12 @@ class Decoder(nn.Module):
         )
         self.drop = drop
 
-    def forward(self, input_):
+    def forward(self, input_: torch.Tensor):
         """
         Forward method
 
-        :param input_: torch 4D array (nb patch, 5, 1024, 1024)
-        :return: network prediction torch 4D array (nb patch, 2, 1024, 1024)
+        :param input_: torch 4D array (nb patch, nb channel(5), height(1024), width(1024))
+        :return: network prediction torch 4D array (nb patch, nb channel(2), height, width)
         """
         if self.drop:
             input_ = nn.Dropout2d(p=0.05)(input_)
@@ -253,12 +254,12 @@ class BuildingSegmentation(nn.Module):
 
         self.optimizer = optim.SGD(params=self.parameters(), lr=5 * 10 ** (-6))
 
-    def forward(self, input_):
+    def forward(self, input_: torch.Tensor):
         """
         Forward method
 
-        :param input_: torch 4D array (nb patch, 5, 1024, 1024)
-        :return: network prediction torch 4D array (nb patch, 2, 1024, 1024)
+        :param input_: torch 4D array (nb patch, nb channel(5), height(1024), width(1024))
+        :return: network prediction torch 4D array (nb patch, nb channel(2), height, width)
         """
         # Initial block
         input_ = self.conv1(input_)
@@ -286,7 +287,8 @@ class BuildingSegmentation(nn.Module):
 
         return output_
 
-    def get_classes(self):
+    @staticmethod
+    def get_classes():
         """Return network's labels
 
         :return: network's labels
@@ -310,7 +312,8 @@ class BuildingSegmentation(nn.Module):
 
         return prediction
 
-    def transform_patches(self, patches):
+    @staticmethod
+    def transform_patches(patches):
         """Apply transformations to patches
 
         :param patches: list of patches
@@ -335,7 +338,8 @@ class BuildingSegmentation(nn.Module):
 
         return patches_expand
 
-    def get_patch_size(self):
+    @staticmethod
+    def get_patch_size():
         """Return integer patch size
 
         :return: patch size

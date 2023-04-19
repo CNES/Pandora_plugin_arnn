@@ -56,6 +56,9 @@ class ARNN(semantic_segmentation.AbstractSemanticSegmentation):
     _REFINEMENT_ = False
     _GROUND_THRESHOLD = 0
     _CONFIDENCE_TRESHOLD = 0.90
+    _PATCH_SIZE = 1024
+    _INVALID_DISP = -9999
+    _MASK_DILATATION = (10, 10)
 
     def __init__(self, **cfg: Dict[str, Union[str, int]]) -> None:
         """
@@ -146,10 +149,12 @@ class ARNN(semantic_segmentation.AbstractSemanticSegmentation):
         col, begin_col = (len(img_left.coords["col"]), 0)
 
         # Padd image to the size of the model if needed
-        if row < 1024:
-            row, begin_row = (1024, 1024 - row)
-        if col < 1024:
-            col, begin_col = (1024, 1024 - col)
+        # If the patch size < self._PATCH_SIZE, the image is in the left corner
+        # and the rest is equal to 0
+        if row < self._PATCH_SIZE:
+            row, begin_row = (self._PATCH_SIZE, self._PATCH_SIZE - row)
+        if col < self._PATCH_SIZE:
+            col, begin_col = (self._PATCH_SIZE, self._PATCH_SIZE - col)
 
         # Extract RGB img
         rgb_img = np.full((3, row, col), fill_value=np.nan, dtype=np.float32)
@@ -225,7 +230,12 @@ class ARNN(semantic_segmentation.AbstractSemanticSegmentation):
             start:
                 if disp > ground_threshold and confidence threshold:
                     if pixel is not vegetation:
-                        Automatic annotation as building
+                        Automatic annotation as building (1)
+                else:
+                    if pixel is vegetation or invalid disp:
+                        Automatic annotation as non valid (-1)
+                    else:
+                        Automatic annotation as ground (0)
 
         :param cv: the cost volume, with the data variables:
 
@@ -250,7 +260,10 @@ class ARNN(semantic_segmentation.AbstractSemanticSegmentation):
         """
         # Apply WTA on cost volume
         wta = AbstractDisparity(
-            **{"disparity_method": "wta", "invalid_disparity": -9999}
+            **{
+                "disparity_method": "wta",
+                "invalid_disparity": self._INVALID_DISP,
+            }
         )
         disp = wta.to_disp(cv, img_left)
         wta.validity_mask(disp, img_left, img_right, cv)
@@ -273,7 +286,7 @@ class ARNN(semantic_segmentation.AbstractSemanticSegmentation):
         # Create annotation map
         annotation = np.full(initial_prediction.shape, -1, dtype=np.float32)
 
-        # Extract overground pixels
+        # Building pixels are set to 1
         annotation[
             np.where(
                 (disp["disparity_map"].data <= self._GROUND_THRESHOLD)
@@ -281,7 +294,7 @@ class ARNN(semantic_segmentation.AbstractSemanticSegmentation):
             )
         ] = 1
 
-        # Extract non-buildings pixels
+        # Extract non-buildings pixels are set to 0
         annotation[
             np.where(
                 (disp["disparity_map"].data > (self._GROUND_THRESHOLD + 1))
@@ -291,7 +304,9 @@ class ARNN(semantic_segmentation.AbstractSemanticSegmentation):
         ] = 0
 
         # Vegetation and invalid pixels are set to -1
-        annotation[np.where(disp["disparity_map"].data == -9999)] = -1
+        annotation[
+            np.where(disp["disparity_map"].data == self._INVALID_DISP)
+        ] = -1
         invalids = (
             cst.PANDORA_MSK_PIXEL_LEFT_NODATA_OR_BORDER
             + cst.PANDORA_MSK_PIXEL_RIGHT_NODATA_OR_DISPARITY_RANGE_MISSING
@@ -306,7 +321,7 @@ class ARNN(semantic_segmentation.AbstractSemanticSegmentation):
 
         # Dilates the vegetation map and remove vegetation pixel in annotation map
         vegetation_map = ndimage.binary_dilation(
-            vegetation_map, structure=np.ones((10, 10))
+            vegetation_map, structure=np.ones(self._MASK_DILATATION)
         ).astype(vegetation_map.dtype)
         annotation[vegetation_map == 1] = -1
 

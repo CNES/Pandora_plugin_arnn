@@ -29,14 +29,12 @@ import numpy as np
 from .common import extract_patches
 
 
-def prediction(
-    image_dataset: xr.Dataset, model: torch.nn.Module, device: torch.device
-) -> None:
+def prediction(image_dataset: xr.Dataset, model: torch.nn.Module, device: torch.device) -> None:
     """
     Makes a prediction using neural network model
 
     :param image_dataset: Input image xarray.DataSet containing the variables :
-            - im : 3D (band, row, col) xarray.DataArray float32
+            - im : 3D (band_im, row, col) xarray.DataArray float32
     :type image_dataset: xr.Dataset
     :param model: Model object
     :type model: torch.nn.Module
@@ -50,9 +48,7 @@ def prediction(
 
     # Patches image
     overlaps = 0
-    patches = extract_patches(
-        image_dataset["im"].data, patch_size, overlaps=overlaps
-    )
+    patches = extract_patches(image_dataset["im"].data, patch_size, overlaps=overlaps)
 
     # Apply model's transformation
     patches = model.transform_patches(patches)  # type: ignore

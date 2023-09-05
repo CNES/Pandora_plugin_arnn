@@ -71,9 +71,7 @@ class ARNN(semantic_segmentation.AbstractSemanticSegmentation):
         self._rgb_bands = self.cfg["RGB_bands"]
         self._vegetation_band = self.cfg["vegetation_band"]
 
-    def check_conf(
-        self, **cfg: Dict[str, Union[str, int]]
-    ) -> Dict[str, Union[str, int]]:
+    def check_conf(self, **cfg: Dict[str, Union[str, int]]) -> Dict[str, Union[str, int]]:
         """
         Add default values to the dictionary if there are missing elements and check if the dictionary is correct
 
@@ -108,9 +106,7 @@ class ARNN(semantic_segmentation.AbstractSemanticSegmentation):
         """
         print("Building semantic segmentation")
 
-    def compute_semantic_segmentation(
-        self, cv: xr.Dataset, img_left: xr.Dataset, img_right: xr.Dataset
-    ) -> xr.Dataset:
+    def compute_semantic_segmentation(self, cv: xr.Dataset, img_left: xr.Dataset, img_right: xr.Dataset) -> xr.Dataset:
         """
         Compute building semantic segmentation
 
@@ -121,17 +117,17 @@ class ARNN(semantic_segmentation.AbstractSemanticSegmentation):
         :type cv: xarray.Dataset
         :param img_left: left Dataset image containing :
 
-                - im : 3D (band, row, col) xarray.DataArray
+                - im : 3D (band_im, row, col) xarray.DataArray
                 - msk (optional): 2D (row, col) xarray.DataArray
         :type img_left: xarray.Dataset
         :param img_right: right Dataset image containing :
 
-                - im : 3D (band, row, col) xarray.DataArray
+                - im : 3D (band_im, row, col) xarray.DataArray
                 - msk (optional): 2D (row, col) xarray.DataArray
         :type img_right: xarray.Dataset
         :return: The building segmentation in the left image dataset with the data variables:
 
-                - im : 3D (band, row, col) xarray.DataArray
+                - im : 3D (band_im, row, col) xarray.DataArray
                 - internal : 2D (row, col) xarray.DataArray building segmentation
         :rtype: xarray.Dataset
         """
@@ -139,9 +135,7 @@ class ARNN(semantic_segmentation.AbstractSemanticSegmentation):
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         model = BuildingSegmentation()
         model = model.eval()
-        pretrained_path = files("pandora_plugin_arnn.model").joinpath(
-            "pretrained_building_segmentation_model.pt"
-        )
+        pretrained_path = files("pandora_plugin_arnn.model").joinpath("pretrained_building_segmentation_model.pt")
         model.load_state_dict(torch.load(pretrained_path))
         model = model.to(device)
 
@@ -160,15 +154,13 @@ class ARNN(semantic_segmentation.AbstractSemanticSegmentation):
         rgb_img = np.full((3, row, col), fill_value=np.nan, dtype=np.float32)
 
         for indx, band in enumerate(["R", "G", "B"]):
-            band_index = list(img_left.band.data).index(self._rgb_bands[band])  # type: ignore
-            rgb_img[indx, begin_row:, begin_col:] = np.copy(
-                img_left["im"].data[band_index, :, :]
-            )
+            band_index = list(img_left.band_im.data).index(self._rgb_bands[band])  # type: ignore
+            rgb_img[indx, begin_row:, begin_col:] = np.copy(img_left["im"].data[band_index, :, :])
 
         model_dataset = xr.Dataset(
-            {"im": (["band", "row", "col"], rgb_img.astype(np.float32))},
+            {"im": (["band_im", "row", "col"], rgb_img.astype(np.float32))},
             coords={
-                "band": list(img_left.band.data),
+                "band_im": list(img_left.band_im.data),
                 "row": np.arange(rgb_img.shape[1]),
                 "col": np.arange(rgb_img.shape[2]),
             },
@@ -197,15 +189,11 @@ class ARNN(semantic_segmentation.AbstractSemanticSegmentation):
             )
 
             # Retrain the network with the annotation map and make a new prediction
-            model_dataset = retrain(
-                model, model_dataset, device, retrain_epoch=1, ignore_index=-1
-            )
+            model_dataset = retrain(model, model_dataset, device, retrain_epoch=1, ignore_index=-1)
 
         # Recrop the segmentation to original image size
         img_left["internal"] = xr.DataArray(
-            data=model_dataset["initial_prediction"].data[
-                begin_row:, begin_col:
-            ],
+            data=model_dataset["initial_prediction"].data[begin_row:, begin_col:],
             coords=[img_left.coords["row"], img_left.coords["col"]],
             dims=["row", "col"],
         )
@@ -244,12 +232,12 @@ class ARNN(semantic_segmentation.AbstractSemanticSegmentation):
         :type cv: xarray.Dataset
         :param img_left: left Dataset image containing :
 
-                - im : 3D (band, row, col) xarray.DataArray
+                - im : 3D (band_im, row, col) xarray.DataArray
                 - msk (optional): 2D (row, col) xarray.DataArray
         :type img_left: xarray
         :param img_right: right Dataset image containing :
 
-                - im : 3D (band,row, col) xarray.DataArray
+                - im : 3D (band_im,row, col) xarray.DataArray
                 - msk (optional): 2D (row, col) xarray.DataArray
         :type img_right: xarray
         :param initial_prediction: First prediction of the model
@@ -273,25 +261,15 @@ class ARNN(semantic_segmentation.AbstractSemanticSegmentation):
             (len(img_left.coords["row"]), len(img_left.coords["col"])),
             dtype=np.float32,
         )
-        if (
-            "confidence_measure" in cv
-            and "confidence_from_ambiguity" in cv.coords["indicator"]
-        ):
-            confidence = (
-                cv["confidence_measure"]
-                .loc[:, :, "confidence_from_ambiguity"]
-                .data
-            )
+        if "confidence_measure" in cv and "confidence_from_ambiguity" in cv.coords["indicator"]:
+            confidence = cv["confidence_measure"].loc[:, :, "confidence_from_ambiguity"].data
 
         # Create annotation map
         annotation = np.full(initial_prediction.shape, -1, dtype=np.float32)
 
         # Building pixels are set to 1
         annotation[
-            np.where(
-                (disp["disparity_map"].data <= self._GROUND_THRESHOLD)
-                & (confidence >= self._CONFIDENCE_TRESHOLD)
-            )
+            np.where((disp["disparity_map"].data <= self._GROUND_THRESHOLD) & (confidence >= self._CONFIDENCE_TRESHOLD))
         ] = 1
 
         # Extract non-buildings pixels are set to 0
@@ -304,9 +282,7 @@ class ARNN(semantic_segmentation.AbstractSemanticSegmentation):
         ] = 0
 
         # Vegetation and invalid pixels are set to -1
-        annotation[
-            np.where(disp["disparity_map"].data == self._INVALID_DISP)
-        ] = -1
+        annotation[np.where(disp["disparity_map"].data == self._INVALID_DISP)] = -1
         invalids = (
             cst.PANDORA_MSK_PIXEL_LEFT_NODATA_OR_BORDER
             + cst.PANDORA_MSK_PIXEL_RIGHT_NODATA_OR_DISPARITY_RANGE_MISSING
@@ -320,9 +296,9 @@ class ARNN(semantic_segmentation.AbstractSemanticSegmentation):
         vegetation_map = self.merge_into_vegetation_map(img_left)
 
         # Dilates the vegetation map and remove vegetation pixel in annotation map
-        vegetation_map = ndimage.binary_dilation(
-            vegetation_map, structure=np.ones(self._MASK_DILATATION)
-        ).astype(vegetation_map.dtype)
+        vegetation_map = ndimage.binary_dilation(vegetation_map, structure=np.ones(self._MASK_DILATATION)).astype(
+            vegetation_map.dtype
+        )
         annotation[vegetation_map == 1] = -1
 
         return annotation

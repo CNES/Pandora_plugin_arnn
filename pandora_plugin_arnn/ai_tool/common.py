@@ -27,13 +27,11 @@ from itertools import product
 import numpy as np
 
 
-def extract_patches(
-    data: np.ndarray, patch_size: int, overlaps: int = 0
-) -> np.ndarray:
+def extract_patches(data: np.ndarray, patch_size: int, overlaps: int = 0) -> np.ndarray:
     """
     Extract patches from image with deep copy
 
-    :param data: 2D (row, col) or 3D (band, row, col) np.ndarray
+    :param data: 2D (row, col) or 3D (band_im, row, col) np.ndarray
     :type data: np.ndarray
     :param patch_size: Patch size
     :type patch_size: int

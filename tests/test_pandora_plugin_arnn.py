@@ -33,9 +33,7 @@ from tests import common
 from pandora_plugin_arnn.pandora_plugin_arnn import semantic_segmentation
 
 
-def test_arnn_rgb_band_in_config_and_dataset(
-    load_rgb_data, load_ground_truth, pandora_machine
-):
+def test_arnn_rgb_band_in_config_and_dataset(load_rgb_data, load_ground_truth, pandora_machine):
     """
     Data with RGB bands in configuration and dataset
     """
@@ -53,9 +51,7 @@ def test_arnn_rgb_band_in_config_and_dataset(
     user_cfg["pipeline"]["disparity"]["invalid_disparity"] = np.nan
 
     # Run the pandora pipeline
-    left, _ = pandora.run(
-        pandora_machine, left_img, right_img, -60, 0, user_cfg
-    )
+    left, _ = pandora.run(pandora_machine, left_img, right_img, -60, 0, user_cfg)
 
     # Compares the calculated left disparity map with the ground truth
     # If the percentage of pixel errors is > 0.20, raise an error
@@ -104,9 +100,7 @@ def test_arnn_rgb_band_missing_in_config(load_rgb_data, pandora_machine):
 
     # The pandora pipeline should fail
     with pytest.raises(json_checker.MissKeyCheckerError):
-        _, _ = pandora.run(
-            pandora_machine_, left_img, right_img, -60, 0, user_cfg
-        )
+        _, _ = pandora.run(pandora_machine_, left_img, right_img, -60, 0, user_cfg)
 
 
 def test_arnn_only_rg_band_in_config(load_rgb_data, pandora_machine):
@@ -133,9 +127,7 @@ def test_arnn_only_rg_band_in_config(load_rgb_data, pandora_machine):
 
     # The pandora pipeline should fail
     with pytest.raises(json_checker.DictCheckerError):
-        _, _ = pandora.run(
-            pandora_machine_, left_img, right_img, -60, 0, user_cfg
-        )
+        _, _ = pandora.run(pandora_machine_, left_img, right_img, -60, 0, user_cfg)
 
 
 def test_arnn_rgb_band_missing_in_dataset(load_rgb_data, pandora_machine):
@@ -153,17 +145,15 @@ def test_arnn_rgb_band_missing_in_dataset(load_rgb_data, pandora_machine):
     # Import pandora plugins
     pandora.import_plugin()
     # Replace band name by fake one
-    left_img.coords["band"] = [0, 1, 2]
-    right_img.coords["band"] = [0, 1, 2]
+    left_img.coords["band_im"] = [0, 1, 2]
+    right_img.coords["band_im"] = [0, 1, 2]
 
     # Load Pandora Machine
     pandora_machine_ = pandora_machine
 
     # The pandora pipeline should fail
     with pytest.raises(SystemExit):
-        _, _ = pandora.run(
-            pandora_machine_, left_img, right_img, -60, 0, user_cfg
-        )
+        _, _ = pandora.run(pandora_machine_, left_img, right_img, -60, 0, user_cfg)
 
 
 def test_merge_into_vegetation_map(load_rgb_data_with_classif):
@@ -197,9 +187,7 @@ def test_wrong_vegetation_class(pandora_machine):
     # Load config
     user_cfg = pandora.read_config_file("tests/conf/pipeline_arnn_basic.json")
     # Replace with wrong configuration
-    user_cfg["pipeline"]["semantic_segmentation"]["vegetation_band"][
-        "classes"
-    ] = ["grass"]
+    user_cfg["pipeline"]["semantic_segmentation"]["vegetation_band"]["classes"] = ["grass"]
 
     # Add inputs
     user_cfg["input"] = {

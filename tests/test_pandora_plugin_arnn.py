@@ -20,12 +20,13 @@
 """Tests for `pandora_plugin_arnn` package."""
 import json_checker
 import numpy as np
+import xarray as xr
 
 # Third party imports
 import pytest
 
 import pandora
-from pandora import check_conf
+from pandora import check_configuration
 
 
 from tests import common
@@ -33,7 +34,7 @@ from tests import common
 from pandora_plugin_arnn.pandora_plugin_arnn import semantic_segmentation
 
 
-def test_arnn_rgb_band_in_config_and_dataset(load_rgb_data, load_ground_truth, pandora_machine):
+def test_arnn_rgb_band_in_config_and_dataset(load_rgb_data_with_classif, load_ground_truth, pandora_machine):
     """
     Data with RGB bands in configuration and dataset
     """
@@ -42,7 +43,7 @@ def test_arnn_rgb_band_in_config_and_dataset(load_rgb_data, load_ground_truth, p
     # Import pandora plugins
     pandora.import_plugin()
     # Load data
-    left_img, right_img = load_rgb_data
+    left_img, right_img = load_rgb_data_with_classif
 
     # Load ground_truth
     left_gt, _ = load_ground_truth
@@ -80,7 +81,7 @@ def test_arnn_rgb_band_in_config_and_dataset(load_rgb_data, load_ground_truth, p
         raise AssertionError
 
 
-def test_arnn_rgb_band_missing_in_config(load_rgb_data, pandora_machine):
+def test_arnn_rgb_band_missing_in_config(load_rgb_data_with_classif, pandora_machine):
     """
     Data with RGB bands missing in configuration
     RGB band needs to be instantiated in configuration with plugin_arnn
@@ -88,7 +89,7 @@ def test_arnn_rgb_band_missing_in_config(load_rgb_data, pandora_machine):
     """
 
     # Load fake data
-    left_img, right_img = load_rgb_data
+    left_img, right_img = load_rgb_data_with_classif
     # Import pandora plugins
     pandora.import_plugin()
     # Load config
@@ -103,7 +104,7 @@ def test_arnn_rgb_band_missing_in_config(load_rgb_data, pandora_machine):
         _, _ = pandora.run(pandora_machine_, left_img, right_img, -60, 0, user_cfg)
 
 
-def test_arnn_only_rg_band_in_config(load_rgb_data, pandora_machine):
+def test_arnn_only_rg_band_in_config(load_rgb_data_with_classif, pandora_machine):
     """
     Data with RG bands only in configuration
     B band needs to be instantiated in configuration with plugin_arnn
@@ -111,7 +112,7 @@ def test_arnn_only_rg_band_in_config(load_rgb_data, pandora_machine):
     """
 
     # Load fake data
-    left_img, right_img = load_rgb_data
+    left_img, right_img = load_rgb_data_with_classif
     # Import pandora plugins
     pandora.import_plugin()
     # Load config
@@ -162,7 +163,19 @@ def test_merge_into_vegetation_map(load_rgb_data_with_classif):
     """
     left, _ = load_rgb_data_with_classif
 
+    data = np.zeros((2, 4, 4))
+    img = xr.Dataset(
+        {"classif": (["band_classif", "row", "col"], data.astype(np.float32))},
+        coords={
+            "band_classif": ["forest", "olive tree"],
+            "row": np.arange(data.shape[1]),
+            "col": np.arange(data.shape[2]),
+        },
+        attrs={"classif": True},
+    )
+
     ssgm_ = semantic_segmentation.AbstractSemanticSegmentation(
+        img,
         **{
             "segmentation_method": "ARNN",
             "RGB_bands": {"R": "r", "G": "g", "B": "b"},
@@ -208,7 +221,7 @@ def test_wrong_vegetation_class(pandora_machine):
 
     # Check configuration
     with pytest.raises(SystemExit):
-        _ = check_conf(user_cfg, pandora_machine_)
+        _ = check_configuration.check_conf(user_cfg, pandora_machine_)
 
 
 def test_vegetation_band_on_left_classif_without_validation(
@@ -237,7 +250,7 @@ def test_vegetation_band_on_left_classif_without_validation(
     pandora_machine_ = pandora_machine
 
     # Check configuration
-    user_cfg = check_conf(user_cfg, pandora_machine_)
+    user_cfg = check_configuration.check_conf(user_cfg, pandora_machine_)
 
     left, right = load_rgb_data_with_classif
 
@@ -299,7 +312,7 @@ def test_vegetation_band_on_right_classif_without_validation(pandora_machine):
 
     # Check configuration
     with pytest.raises(SystemExit):
-        _ = check_conf(user_cfg, pandora_machine_)
+        _ = check_configuration.check_conf(user_cfg, pandora_machine_)
 
 
 def test_vegetation_band_on_left_and_right_classif_without_validation(
@@ -329,7 +342,7 @@ def test_vegetation_band_on_left_and_right_classif_without_validation(
     pandora_machine_ = pandora_machine
 
     # Check configuration
-    user_cfg = check_conf(user_cfg, pandora_machine_)
+    user_cfg = check_configuration.check_conf(user_cfg, pandora_machine_)
 
     left, right = load_rgb_data_with_classif
 
@@ -398,7 +411,7 @@ def test_vegetation_band_on_left_classif_with_validation(pandora_machine):
 
     # Check configuration
     with pytest.raises(SystemExit):
-        _ = check_conf(user_cfg, pandora_machine_)
+        _ = check_configuration.check_conf(user_cfg, pandora_machine_)
 
 
 def test_vegetation_band_on_left_and_right_classif_with_validation(
@@ -435,7 +448,7 @@ def test_vegetation_band_on_left_and_right_classif_with_validation(
     pandora_machine_ = pandora_machine
 
     # Check configuration
-    user_cfg = check_conf(user_cfg, pandora_machine_)
+    user_cfg = check_configuration.check_conf(user_cfg, pandora_machine_)
 
     left, right = load_rgb_data_with_classif
 

@@ -25,18 +25,20 @@ This module contains all functions to compute and refine a semantic segmentation
 from abc import abstractmethod
 from typing import Dict, Union
 
+import logging
+import sys
 import numpy as np
 import torch
 import xarray as xr
 from importlib_resources import files
 from json_checker import Checker, And
-from pandora import constants as cst
+from scipy import ndimage
+import pandora.constants as cst
 from pandora.disparity import AbstractDisparity
 
 # pylint: disable=import-error
 # pylint: disable=no-name-in-module
 from pandora.semantic_segmentation import semantic_segmentation
-from scipy import ndimage
 
 from pandora_plugin_arnn.ai_tool.prediction import prediction
 from pandora_plugin_arnn.ai_tool.retrain import retrain
@@ -60,21 +62,25 @@ class ARNN(semantic_segmentation.AbstractSemanticSegmentation):
     _INVALID_DISP = -9999
     _MASK_DILATATION = (10, 10)
 
-    def __init__(self, **cfg: Dict[str, Union[str, int]]) -> None:
+    def __init__(self, img: xr.Dataset, **cfg: Dict[str, Union[str, int]]) -> None:
         """
+        :param img: xarray.Dataset of image with metadata
+        :type img: xarray.Dataset
         :param cfg: optional configuration,  {'window_size': value, 'subpix': value}
         :type cfg: dict
         :return: None
         """
-        self.cfg = self.check_conf(**cfg)
+        self.cfg = self.check_conf(img, **cfg)
         self._refinement = self.cfg["refinement"]
         self._rgb_bands = self.cfg["RGB_bands"]
         self._vegetation_band = self.cfg["vegetation_band"]
 
-    def check_conf(self, **cfg: Dict[str, Union[str, int]]) -> Dict[str, Union[str, int]]:
+    def check_conf(self, img: xr.Dataset, **cfg: Dict[str, Union[str, int]]) -> Dict[str, Union[str, int]]:
         """
         Add default values to the dictionary if there are missing elements and check if the dictionary is correct
 
+        :param img: xarray.Dataset of image with metadata
+        :type img: xarray.Dataset
         :param cfg: matching cost configuration
         :type cfg: dict
         :return cfg: matching cost configuration updated
@@ -83,6 +89,12 @@ class ARNN(semantic_segmentation.AbstractSemanticSegmentation):
         # Give the default value if the required element is not in the conf
         if "refinement" not in cfg:
             cfg["refinement"] = self._REFINEMENT_  # type: ignore
+
+        if "vegetation_band" in cfg and not "classif" in img.data_vars:
+            logging.error(
+                "For performing the semantic_segmentation step in the pipeline, left_classif must be present."
+            )
+            sys.exit(1)
 
         schema = {
             "segmentation_method": And(str, lambda x: x == "ARNN"),

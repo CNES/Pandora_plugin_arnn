@@ -22,9 +22,9 @@ This module contains fixtures
 """
 
 import numpy as np
-import pandora
 import pytest
 import xarray as xr
+import pandora
 from pandora.state_machine import PandoraMachine
 
 
@@ -124,6 +124,44 @@ def load_ground_truth():
     right_data = pandora.read_img("tests/outputs/gt_disp_right.tif", no_data=np.nan, mask=None)
 
     return left_data, right_data
+
+
+@pytest.fixture(name="load_pipeline_conf")
+def load_pipeline_conf_fixture():
+    """
+    This fixture loads pipeline conf
+    """
+    return pandora.read_config_file("tests/conf/pipeline_arnn_basic.json")
+
+
+@pytest.fixture(name="load_conf")
+def load_conf_fixture(load_pipeline_conf):
+    """
+    This fixture loads input & pipeline conf
+    """
+    user_cfg = load_pipeline_conf
+    # Add inputs
+    user_cfg["input"] = {
+        "img_left": "tests/inputs/left_rgb.tif",
+        "img_right": "tests/inputs/right_rgb.tif",
+        "disp_min": -60,
+        "disp_max": 0,
+        "nodata_left": "NaN",
+        "nodata_right": "NaN",
+    }
+    return user_cfg
+
+
+@pytest.fixture()
+def load_conf_with_classifs(load_conf):
+    """
+    This fixture loads input & pipeline conf and add classif mask
+    """
+    user_cfg = load_conf
+    # Add classif
+    user_cfg["input"]["left_classif"] = "tests/inputs/left_classif.tif"
+    user_cfg["input"]["right_classif"] = "tests/inputs/right_classif.tif"
+    return user_cfg
 
 
 @pytest.fixture()

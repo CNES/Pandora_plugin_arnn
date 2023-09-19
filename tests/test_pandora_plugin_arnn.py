@@ -20,12 +20,13 @@
 """Tests for `pandora_plugin_arnn` package."""
 import json_checker
 import numpy as np
+import xarray as xr
 
 # Third party imports
 import pytest
 
 import pandora
-from pandora import check_conf
+from pandora import check_configuration
 
 
 from tests import common
@@ -33,16 +34,19 @@ from tests import common
 from pandora_plugin_arnn.pandora_plugin_arnn import semantic_segmentation
 
 
-def test_arnn_rgb_band_in_config_and_dataset(load_rgb_data, load_ground_truth, pandora_machine):
+def test_arnn_rgb_band_in_config_and_dataset(
+    load_pipeline_conf, load_rgb_data_with_classif, load_ground_truth, pandora_machine
+):
     """
     Data with RGB bands in configuration and dataset
     """
 
-    user_cfg = pandora.read_config_file("tests/conf/pipeline_arnn_basic.json")
+    # Load pipeline config
+    user_cfg = load_pipeline_conf
     # Import pandora plugins
     pandora.import_plugin()
     # Load data
-    left_img, right_img = load_rgb_data
+    left_img, right_img = load_rgb_data_with_classif
 
     # Load ground_truth
     left_gt, _ = load_ground_truth
@@ -80,7 +84,7 @@ def test_arnn_rgb_band_in_config_and_dataset(load_rgb_data, load_ground_truth, p
         raise AssertionError
 
 
-def test_arnn_rgb_band_missing_in_config(load_rgb_data, pandora_machine):
+def test_arnn_rgb_band_missing_in_config(load_rgb_data_with_classif, load_pipeline_conf, pandora_machine):
     """
     Data with RGB bands missing in configuration
     RGB band needs to be instantiated in configuration with plugin_arnn
@@ -88,11 +92,11 @@ def test_arnn_rgb_band_missing_in_config(load_rgb_data, pandora_machine):
     """
 
     # Load fake data
-    left_img, right_img = load_rgb_data
+    left_img, right_img = load_rgb_data_with_classif
     # Import pandora plugins
     pandora.import_plugin()
     # Load config
-    user_cfg = pandora.read_config_file("tests/conf/pipeline_arnn_basic.json")
+    user_cfg = load_pipeline_conf
     # Remove RGB config from user_config
     del user_cfg["pipeline"]["semantic_segmentation"]["RGB_bands"]
     # Load Pandora Machine
@@ -103,7 +107,7 @@ def test_arnn_rgb_band_missing_in_config(load_rgb_data, pandora_machine):
         _, _ = pandora.run(pandora_machine_, left_img, right_img, -60, 0, user_cfg)
 
 
-def test_arnn_only_rg_band_in_config(load_rgb_data, pandora_machine):
+def test_arnn_only_rg_band_in_config(load_rgb_data_with_classif, load_pipeline_conf, pandora_machine):
     """
     Data with RG bands only in configuration
     B band needs to be instantiated in configuration with plugin_arnn
@@ -111,11 +115,11 @@ def test_arnn_only_rg_band_in_config(load_rgb_data, pandora_machine):
     """
 
     # Load fake data
-    left_img, right_img = load_rgb_data
+    left_img, right_img = load_rgb_data_with_classif
     # Import pandora plugins
     pandora.import_plugin()
     # Load config
-    user_cfg = pandora.read_config_file("tests/conf/pipeline_arnn_basic.json")
+    user_cfg = load_pipeline_conf
     # Remove green band from configuration
     user_cfg["pipeline"]["semantic_segmentation"]["RGB_bands"] = {
         "R": "r",
@@ -130,7 +134,7 @@ def test_arnn_only_rg_band_in_config(load_rgb_data, pandora_machine):
         _, _ = pandora.run(pandora_machine_, left_img, right_img, -60, 0, user_cfg)
 
 
-def test_arnn_rgb_band_missing_in_dataset(load_rgb_data, pandora_machine):
+def test_arnn_rgb_band_missing_in_dataset(load_rgb_data, load_pipeline_conf, pandora_machine):
     """
     Data with RGB bands missing in dataset
     RGB band needs to be instantiated in dataset with plugin_arnn
@@ -141,7 +145,7 @@ def test_arnn_rgb_band_missing_in_dataset(load_rgb_data, pandora_machine):
     left_img, right_img = load_rgb_data
 
     # Load config
-    user_cfg = pandora.read_config_file("tests/conf/pipeline_arnn_basic.json")
+    user_cfg = load_pipeline_conf
     # Import pandora plugins
     pandora.import_plugin()
     # Replace band name by fake one
@@ -162,7 +166,19 @@ def test_merge_into_vegetation_map(load_rgb_data_with_classif):
     """
     left, _ = load_rgb_data_with_classif
 
+    data = np.zeros((2, 4, 4))
+    img_metadata = xr.Dataset(
+        {"classif": (["band_classif", "row", "col"], data.astype(np.float32))},
+        coords={
+            "band_classif": ["forest", "olive tree"],
+            "row": np.arange(data.shape[1]),
+            "col": np.arange(data.shape[2]),
+        },
+        attrs={"classif": True},
+    )
+
     ssgm_ = semantic_segmentation.AbstractSemanticSegmentation(
+        img_metadata,
         **{
             "segmentation_method": "ARNN",
             "RGB_bands": {"R": "r", "G": "g", "B": "b"},
@@ -178,28 +194,12 @@ def test_merge_into_vegetation_map(load_rgb_data_with_classif):
     assert gt_vegetation_map.data == vegetation_map.data
 
 
-def test_wrong_vegetation_class(pandora_machine):
+def test_vegetation_without_classif(load_conf, pandora_machine):
     """
-    Semantic segmentation on wrong band for left classification
-    Classes must be the same to classify band names in data.
-    Check that the check_conf function raises an error.
+    Test the check vegetation option without classif
     """
     # Load config
-    user_cfg = pandora.read_config_file("tests/conf/pipeline_arnn_basic.json")
-    # Replace with wrong configuration
-    user_cfg["pipeline"]["semantic_segmentation"]["vegetation_band"]["classes"] = ["grass"]
-
-    # Add inputs
-    user_cfg["input"] = {
-        "img_left": "tests/inputs/left_rgb.tif",
-        "left_classif": "tests/inputs/left_classif.tif",
-        "img_right": "tests/inputs/right_rgb.tif",
-        "right_classif": "tests/inputs/right_classif.tif",
-        "disp_min": -60,
-        "disp_max": 0,
-        "nodata_left": "NaN",
-        "nodata_right": "NaN",
-    }
+    user_cfg = load_conf
 
     # Import pandora plugins
     pandora.import_plugin()
@@ -208,28 +208,19 @@ def test_wrong_vegetation_class(pandora_machine):
 
     # Check configuration
     with pytest.raises(SystemExit):
-        _ = check_conf(user_cfg, pandora_machine_)
+        _ = check_configuration.check_conf(user_cfg, pandora_machine_)
 
 
-def test_vegetation_band_on_left_classif_without_validation(
-    load_rgb_data_with_classif, pandora_machine, load_ground_truth
-):
+def test_wrong_vegetation_class(load_conf_with_classifs, pandora_machine):
     """
-    Semantic segmentation with left classification and without validation
+    Semantic segmentation on wrong band for left classification
+    Classes must be the same to classify band names in data.
+    Check that the check_conf function raises an error.
     """
     # Load config
-    user_cfg = pandora.read_config_file("tests/conf/pipeline_arnn_basic.json")
-
-    # Add inputs
-    user_cfg["input"] = {
-        "img_left": "tests/inputs/left_rgb.tif",
-        "left_classif": "tests/inputs/left_classif.tif",
-        "img_right": "tests/inputs/right_rgb.tif",
-        "disp_min": -60,
-        "disp_max": 0,
-        "nodata_left": "NaN",
-        "nodata_right": "NaN",
-    }
+    user_cfg = load_conf_with_classifs
+    # Replace with wrong configuration
+    user_cfg["pipeline"]["semantic_segmentation"]["vegetation_band"]["classes"] = ["grass"]
 
     # Import pandora plugins
     pandora.import_plugin()
@@ -237,7 +228,28 @@ def test_vegetation_band_on_left_classif_without_validation(
     pandora_machine_ = pandora_machine
 
     # Check configuration
-    user_cfg = check_conf(user_cfg, pandora_machine_)
+    with pytest.raises(SystemExit):
+        _ = check_configuration.check_conf(user_cfg, pandora_machine_)
+
+
+def test_vegetation_band_on_left_classif_without_validation(
+    load_conf, load_rgb_data_with_classif, pandora_machine, load_ground_truth
+):
+    """
+    Semantic segmentation with left classification and without validation
+    """
+    # Load config
+    user_cfg = load_conf
+    # Add left classif
+    user_cfg["input"]["left_classif"] = "tests/inputs/left_classif.tif"
+
+    # Import pandora plugins
+    pandora.import_plugin()
+
+    pandora_machine_ = pandora_machine
+
+    # Check configuration
+    user_cfg = check_configuration.check_conf(user_cfg, pandora_machine_)
 
     left, right = load_rgb_data_with_classif
 
@@ -271,7 +283,7 @@ def test_vegetation_band_on_left_classif_without_validation(
         raise AssertionError
 
 
-def test_vegetation_band_on_right_classif_without_validation(pandora_machine):
+def test_vegetation_band_on_right_classif_without_validation(load_conf, pandora_machine):
     """
     Semantic segmentation with right classification and without validation
     Classification must be instantiated with left data.
@@ -279,18 +291,9 @@ def test_vegetation_band_on_right_classif_without_validation(pandora_machine):
     """
 
     # Load config
-    user_cfg = pandora.read_config_file("tests/conf/pipeline_arnn_basic.json")
-
-    # Add inputs
-    user_cfg["input"] = {
-        "img_left": "tests/inputs/left_rgb.tif",
-        "img_right": "tests/inputs/right_rgb.tif",
-        "right_classif": "tests/inputs/right_classif.tif",
-        "disp_min": -60,
-        "disp_max": 0,
-        "nodata_left": "NaN",
-        "nodata_right": "NaN",
-    }
+    user_cfg = load_conf
+    # Add right classif
+    user_cfg["input"]["right_classif"] = "tests/inputs/right_classif.tif"
 
     # Import pandora plugins
     pandora.import_plugin()
@@ -299,29 +302,17 @@ def test_vegetation_band_on_right_classif_without_validation(pandora_machine):
 
     # Check configuration
     with pytest.raises(SystemExit):
-        _ = check_conf(user_cfg, pandora_machine_)
+        _ = check_configuration.check_conf(user_cfg, pandora_machine_)
 
 
 def test_vegetation_band_on_left_and_right_classif_without_validation(
-    load_rgb_data_with_classif, pandora_machine, load_ground_truth
+    load_conf_with_classifs, load_rgb_data_with_classif, pandora_machine, load_ground_truth
 ):
     """
     Semantic segmentation with left and right classification and without validation
     """
     # Load config
-    user_cfg = pandora.read_config_file("tests/conf/pipeline_arnn_basic.json")
-
-    # Add inputs
-    user_cfg["input"] = {
-        "img_left": "tests/inputs/left_rgb.tif",
-        "left_classif": "tests/inputs/left_classif.tif",
-        "img_right": "tests/inputs/right_rgb.tif",
-        "right_classif": "tests/inputs/right_classif.tif",
-        "disp_min": -60,
-        "disp_max": 0,
-        "nodata_left": "NaN",
-        "nodata_right": "NaN",
-    }
+    user_cfg = load_conf_with_classifs
 
     # Import pandora plugins
     pandora.import_plugin()
@@ -329,7 +320,7 @@ def test_vegetation_band_on_left_and_right_classif_without_validation(
     pandora_machine_ = pandora_machine
 
     # Check configuration
-    user_cfg = check_conf(user_cfg, pandora_machine_)
+    user_cfg = check_configuration.check_conf(user_cfg, pandora_machine_)
 
     left, right = load_rgb_data_with_classif
 
@@ -363,7 +354,7 @@ def test_vegetation_band_on_left_and_right_classif_without_validation(
         raise AssertionError
 
 
-def test_vegetation_band_on_left_classif_with_validation(pandora_machine):
+def test_vegetation_band_on_left_classif_with_validation(load_conf, pandora_machine):
     """
     Semantic segmentation with left classification with validation
     Classification must be instantiated with left and right data.
@@ -371,7 +362,9 @@ def test_vegetation_band_on_left_classif_with_validation(pandora_machine):
     """
 
     # Load config
-    user_cfg = pandora.read_config_file("tests/conf/pipeline_arnn_basic.json")
+    user_cfg = load_conf
+    # Add left classif
+    user_cfg["input"]["left_classif"] = "tests/inputs/left_classif.tif"
 
     # Add validation step
     user_cfg["pipeline"]["validation"] = {
@@ -379,17 +372,6 @@ def test_vegetation_band_on_left_classif_with_validation(pandora_machine):
         "cross_checking_threshold": 1,
     }
     user_cfg["pipeline"]["right_disp_map"] = {"method": "accurate"}
-
-    # Add inputs
-    user_cfg["input"] = {
-        "img_left": "tests/inputs/left_rgb.tif",
-        "left_classif": "tests/inputs/left_classif.tif",
-        "img_right": "tests/inputs/right_rgb.tif",
-        "disp_min": -60,
-        "disp_max": 0,
-        "nodata_left": "NaN",
-        "nodata_right": "NaN",
-    }
 
     # Import pandora plugins
     pandora.import_plugin()
@@ -398,17 +380,17 @@ def test_vegetation_band_on_left_classif_with_validation(pandora_machine):
 
     # Check configuration
     with pytest.raises(SystemExit):
-        _ = check_conf(user_cfg, pandora_machine_)
+        _ = check_configuration.check_conf(user_cfg, pandora_machine_)
 
 
 def test_vegetation_band_on_left_and_right_classif_with_validation(
-    load_rgb_data_with_classif, pandora_machine, load_ground_truth
+    load_conf_with_classifs, load_rgb_data_with_classif, pandora_machine, load_ground_truth
 ):
     """
     Semantic segmentation with left and right classification with validation
     """
     # Load config
-    user_cfg = pandora.read_config_file("tests/conf/pipeline_arnn_basic.json")
+    user_cfg = load_conf_with_classifs
 
     # Add validation step
     user_cfg["pipeline"]["validation"] = {
@@ -417,25 +399,13 @@ def test_vegetation_band_on_left_and_right_classif_with_validation(
     }
     user_cfg["pipeline"]["right_disp_map"] = {"method": "accurate"}
 
-    # Add inputs
-    user_cfg["input"] = {
-        "img_left": "tests/inputs/left_rgb.tif",
-        "left_classif": "tests/inputs/left_classif.tif",
-        "img_right": "tests/inputs/right_rgb.tif",
-        "right_classif": "tests/inputs/right_classif.tif",
-        "disp_min": -60,
-        "disp_max": 0,
-        "nodata_left": "NaN",
-        "nodata_right": "NaN",
-    }
-
     # Import pandora plugins
     pandora.import_plugin()
 
     pandora_machine_ = pandora_machine
 
     # Check configuration
-    user_cfg = check_conf(user_cfg, pandora_machine_)
+    user_cfg = check_configuration.check_conf(user_cfg, pandora_machine_)
 
     left, right = load_rgb_data_with_classif
 

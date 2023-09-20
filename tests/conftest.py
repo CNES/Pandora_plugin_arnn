@@ -144,8 +144,7 @@ def load_conf_fixture(load_pipeline_conf):
     user_cfg["input"] = {
         "img_left": "tests/inputs/left_rgb.tif",
         "img_right": "tests/inputs/right_rgb.tif",
-        "disp_min": -60,
-        "disp_max": 0,
+        "disp_left": [-60, 0],
         "nodata_left": "NaN",
         "nodata_right": "NaN",
     }

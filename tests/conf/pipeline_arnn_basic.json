@@ -1,9 +1,6 @@
 {
   "pipeline":
   {
-    "right_disp_map": {
-      "method": "None"
-    },
     "matching_cost" : {
       "matching_cost_method": "census",
       "band": "r",

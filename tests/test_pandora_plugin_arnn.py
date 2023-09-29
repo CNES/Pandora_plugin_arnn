@@ -368,10 +368,9 @@ def test_vegetation_band_on_left_classif_with_validation(load_conf, pandora_mach
 
     # Add validation step
     user_cfg["pipeline"]["validation"] = {
-        "validation_method": "cross_checking",
+        "validation_method": "cross_checking_accurate",
         "cross_checking_threshold": 1,
     }
-    user_cfg["pipeline"]["right_disp_map"] = {"method": "accurate"}
 
     # Import pandora plugins
     pandora.import_plugin()
@@ -394,10 +393,9 @@ def test_vegetation_band_on_left_and_right_classif_with_validation(
 
     # Add validation step
     user_cfg["pipeline"]["validation"] = {
-        "validation_method": "cross_checking",
+        "validation_method": "cross_checking_accurate",
         "cross_checking_threshold": 1,
     }
-    user_cfg["pipeline"]["right_disp_map"] = {"method": "accurate"}
 
     # Import pandora plugins
     pandora.import_plugin()

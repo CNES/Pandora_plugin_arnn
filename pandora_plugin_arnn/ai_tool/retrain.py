@@ -71,7 +71,7 @@ def retrain(
     image_patches = image_patches.to(device)
 
     for _ in range(retrain_epoch):
-        prediction_data = model.predict(image_patches)  # type: ignore
+        prediction_data = model.predict(image_patches)
         loss = retrain_loss(
             prediction_data,
             annotations_patches,
@@ -79,7 +79,7 @@ def retrain(
             initial_patches,
             device,
         )
-        model.backward(loss)  # type: ignore
+        model.backward(loss)
 
     # Make new prediction
     prediction(image_dataset, model, device)
@@ -106,11 +106,11 @@ def prepare_retrain_data(
     :return: Deep copy of image, initial prediction and annotation patches
     :rtype: Tuple[torch.Tensor(nb_patches, band, row, col), np.ndarray, np.ndarray]
     """
-    patch_size = model.get_patch_size()  # type: ignore
+    patch_size = model.get_patch_size()
 
     # Patches image and annotations
     image_patches = extract_patches(image_dataset["im"].data, patch_size)
-    image_patches = model.transform_patches(image_patches)  # type: ignore
+    image_patches = model.transform_patches(image_patches)
 
     initial_patches = extract_patches(image_dataset["initial_prediction"].data, patch_size)
 

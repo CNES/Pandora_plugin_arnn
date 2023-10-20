@@ -84,8 +84,22 @@ def load_rgb_data():
     """
 
     # Cones images
-    left_data = pandora.read_img("tests/inputs/left_rgb.tif", no_data=np.nan, mask=None)
-    right_data = pandora.read_img("tests/inputs/right_rgb.tif", no_data=np.nan, mask=None)
+    input_config = {
+        "left": {
+            "img": "tests/inputs/left_rgb.tif",
+            "nodata": np.nan,
+            "mask": None,
+            "disp": [-60, 0],
+        },
+        "right": {
+            "img": "tests/inputs/right_rgb.tif",
+            "nodata": np.nan,
+            "mask": None,
+            "disp": None,
+        },
+    }
+    left_data = pandora.create_dataset_from_inputs(input_config["left"])
+    right_data = pandora.create_dataset_from_inputs(input_config["right"])
 
     return left_data, right_data
 
@@ -97,18 +111,24 @@ def load_rgb_data_with_classif():
     """
 
     # Cones images
-    left_data = pandora.read_img(
-        "tests/inputs/left_rgb.tif",
-        no_data=np.nan,
-        mask=None,
-        classif="tests/inputs/left_classif.tif",
-    )
-    right_data = pandora.read_img(
-        "tests/inputs/right_rgb.tif",
-        no_data=np.nan,
-        mask=None,
-        classif="tests/inputs/right_classif.tif",
-    )
+    input_config = {
+        "left": {
+            "img": "tests/inputs/left_rgb.tif",
+            "nodata": np.nan,
+            "mask": None,
+            "classif": "tests/inputs/left_classif.tif",
+            "disp": [-60, 0],
+        },
+        "right": {
+            "img": "tests/inputs/right_rgb.tif",
+            "nodata": np.nan,
+            "mask": None,
+            "classif": "tests/inputs/right_classif.tif",
+            "disp": None,
+        },
+    }
+    left_data = pandora.create_dataset_from_inputs(input_config["left"])
+    right_data = pandora.create_dataset_from_inputs(input_config["right"])
 
     return left_data, right_data
 
@@ -120,8 +140,22 @@ def load_ground_truth():
     """
 
     # Cones images
-    left_data = pandora.read_img("tests/outputs/gt_disp_left.tif", no_data=np.nan, mask=None)
-    right_data = pandora.read_img("tests/outputs/gt_disp_right.tif", no_data=np.nan, mask=None)
+    input_config = {
+        "left": {
+            "img": "tests/outputs/gt_disp_left.tif",
+            "nodata": np.nan,
+            "mask": None,
+            "disp": [-60, 0],
+        },
+        "right": {
+            "img": "tests/outputs/gt_disp_right.tif",
+            "nodata": np.nan,
+            "mask": None,
+            "disp": None,
+        },
+    }
+    left_data = pandora.create_dataset_from_inputs(input_config["left"])
+    right_data = pandora.create_dataset_from_inputs(input_config["right"])
 
     return left_data, right_data
 

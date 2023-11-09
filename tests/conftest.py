@@ -176,11 +176,12 @@ def load_conf_fixture(load_pipeline_conf):
     user_cfg = load_pipeline_conf
     # Add inputs
     user_cfg["input"] = {
-        "img_left": "tests/inputs/left_rgb.tif",
-        "img_right": "tests/inputs/right_rgb.tif",
-        "disp_left": [-60, 0],
-        "nodata_left": "NaN",
-        "nodata_right": "NaN",
+        "left": {
+            "img": "tests/inputs/left_rgb.tif",
+            "disp": [-60, 0],
+            "nodata": "NaN",
+        },
+        "right": {"img": "tests/inputs/right_rgb.tif", "nodata": "NaN"},
     }
     return user_cfg
 
@@ -192,8 +193,8 @@ def load_conf_with_classifs(load_conf):
     """
     user_cfg = load_conf
     # Add classif
-    user_cfg["input"]["left_classif"] = "tests/inputs/left_classif.tif"
-    user_cfg["input"]["right_classif"] = "tests/inputs/right_classif.tif"
+    user_cfg["input"]["left"]["classif"] = "tests/inputs/left_classif.tif"
+    user_cfg["input"]["right"]["classif"] = "tests/inputs/right_classif.tif"
     return user_cfg
 
 

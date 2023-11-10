@@ -241,7 +241,7 @@ def test_vegetation_band_on_left_classif_without_validation(
     # Load config
     user_cfg = load_conf
     # Add left classif
-    user_cfg["input"]["left_classif"] = "tests/inputs/left_classif.tif"
+    user_cfg["input"]["left"]["classif"] = "tests/inputs/left_classif.tif"
 
     # Import pandora plugins
     pandora.import_plugin()
@@ -293,7 +293,7 @@ def test_vegetation_band_on_right_classif_without_validation(load_conf, pandora_
     # Load config
     user_cfg = load_conf
     # Add right classif
-    user_cfg["input"]["right_classif"] = "tests/inputs/right_classif.tif"
+    user_cfg["input"]["right"]["classif"] = "tests/inputs/right_classif.tif"
 
     # Import pandora plugins
     pandora.import_plugin()
@@ -364,7 +364,7 @@ def test_vegetation_band_on_left_classif_with_validation(load_conf, pandora_mach
     # Load config
     user_cfg = load_conf
     # Add left classif
-    user_cfg["input"]["left_classif"] = "tests/inputs/left_classif.tif"
+    user_cfg["input"]["left"]["classif"] = "tests/inputs/left_classif.tif"
 
     # Add validation step
     user_cfg["pipeline"]["validation"] = {

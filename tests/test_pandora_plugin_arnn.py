@@ -21,6 +21,7 @@
 import json_checker
 import numpy as np
 import xarray as xr
+import transitions
 
 # Third party imports
 import pytest
@@ -156,7 +157,7 @@ def test_arnn_rgb_band_missing_in_dataset(load_rgb_data, load_pipeline_conf, pan
     pandora_machine_ = pandora_machine
 
     # The pandora pipeline should fail
-    with pytest.raises(SystemExit):
+    with pytest.raises(AttributeError, match="Wrong band instantiate : r not in img_left or img_right"):
         _, _ = pandora.run(pandora_machine_, left_img, right_img, user_cfg)
 
 
@@ -207,7 +208,9 @@ def test_vegetation_without_classif(load_conf, pandora_machine):
     pandora_machine_ = pandora_machine
 
     # Check configuration
-    with pytest.raises(SystemExit):
+    with pytest.raises(
+        transitions.core.MachineError, match="'A problem occurs during Pandora checking. Be sure of your sequencing'"
+    ):
         _ = check_configuration.check_conf(user_cfg, pandora_machine_)
 
 
@@ -228,7 +231,9 @@ def test_wrong_vegetation_class(load_conf_with_classifs, pandora_machine):
     pandora_machine_ = pandora_machine
 
     # Check configuration
-    with pytest.raises(SystemExit):
+    with pytest.raises(
+        transitions.core.MachineError, match="A problem occurs during Pandora checking. Be sure of your sequencing"
+    ):
         _ = check_configuration.check_conf(user_cfg, pandora_machine_)
 
 
@@ -301,7 +306,9 @@ def test_vegetation_band_on_right_classif_without_validation(load_conf, pandora_
     pandora_machine_ = pandora_machine
 
     # Check configuration
-    with pytest.raises(SystemExit):
+    with pytest.raises(
+        transitions.core.MachineError, match="'A problem occurs during Pandora checking. Be sure of your sequencing'"
+    ):
         _ = check_configuration.check_conf(user_cfg, pandora_machine_)
 
 
@@ -378,7 +385,9 @@ def test_vegetation_band_on_left_classif_with_validation(load_conf, pandora_mach
     pandora_machine_ = pandora_machine
 
     # Check configuration
-    with pytest.raises(SystemExit):
+    with pytest.raises(
+        transitions.core.MachineError, match="'A problem occurs during Pandora checking. Be sure of your sequencing'"
+    ):
         _ = check_configuration.check_conf(user_cfg, pandora_machine_)
 
 

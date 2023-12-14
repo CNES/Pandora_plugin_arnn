@@ -25,8 +25,6 @@ This module contains all functions to compute and refine a semantic segmentation
 from abc import abstractmethod
 from typing import Dict, Union
 
-import logging
-import sys
 import numpy as np
 import torch
 import xarray as xr
@@ -91,10 +89,9 @@ class ARNN(semantic_segmentation.AbstractSemanticSegmentation):
             cfg["refinement"] = self._REFINEMENT_  # type: ignore
 
         if "vegetation_band" in cfg and not "classif" in img.data_vars:
-            logging.error(
+            raise AttributeError(
                 "For performing the semantic_segmentation step in the pipeline, left_classif must be present."
             )
-            sys.exit(1)
 
         schema = {
             "segmentation_method": And(str, lambda x: x == "ARNN"),

@@ -325,7 +325,7 @@ class ARNN(semantic_segmentation.AbstractSemanticSegmentation):
         :rtype: 2D (row, cool) np.array dtype=bool
         """
         # Copy create to avoid pylint error with stub function
-        vegetation_map = np.zeros((img_left.dims["row"], img_left.dims["col"]))
+        vegetation_map = np.zeros((img_left.sizes["row"], img_left.sizes["col"]))
 
         # Create a vegetation map based on all selected masks.
         for _, class_name in enumerate(self._vegetation_band["classes"]):  # type: ignore

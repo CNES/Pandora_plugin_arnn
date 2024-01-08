@@ -9,7 +9,6 @@
 #
 # All configuration values have a default; values that are commented out
 # serve to show the default.
-
 # -- Path setup --------------------------------------------------------------
 
 # If extensions (or modules to document with autodoc) are in another directory,
@@ -18,6 +17,11 @@
 #
 import os
 import sys
+
+if sys.version_info < (3, 10):
+    import importlib_metadata
+else:
+    import importlib.metadata as importlib_metadata
 
 sys.path.insert(0, os.path.abspath("../.."))
 sys.setrecursionlimit(1500)
@@ -30,12 +34,10 @@ copyright = "2022, CNES"
 author = "CNES"
 
 # The full version, including alpha/beta/rc tags
-from pkg_resources import get_distribution
-
 try:
-    version = get_distribution("pandora_plugin_arnn").version
+    version = importlib_metadata.version("pandora_plugin_arnn")
     release = version
-except Exception as error:
+except importlib_metadata.PackageNotFoundError as error:
     print("WARNING: cannot find pandora_plugin_arnn version")
     version = "Unknown"
     release = version

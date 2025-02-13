@@ -20,8 +20,8 @@ ifndef PLUGIN_ARNN_VENV
 	PLUGIN_ARNN_VENV = "venv"
 endif
 
-# Check CMAKE variable before venv creation (only for install target)
-CHECK_CMAKE = $(shell command -v cmake 2> /dev/null)
+# Check if plugin is installed
+CHECK_PLUGIN_ARNN = $(shell ${PLUGIN_ARNN_VENV}/bin/python3 -m pip list|grep pandora_plugin_arnn)
 
 # Check python3 globally
 PYTHON=$(shell command -v python3)
@@ -47,23 +47,19 @@ help: ## this help
 
 ## Install section
 
-.PHONY: check
-check: ## check if cmake is installed
-	@[ "${CHECK_CMAKE}" ] || ( echo ">> cmake not found"; exit 1 )
-
 .PHONY: venv
-venv: check ## create virtualenv in PLUGIN_ARNN_VENV directory if not exists
+venv: ## create virtualenv in PLUGIN_ARNN_VENV directory if not exists
 	@test -d ${PLUGIN_ARNN_VENV} || python3 -m venv ${PLUGIN_ARNN_VENV}
 	@${PLUGIN_ARNN_VENV}/bin/python -m pip install --upgrade pip setuptools wheel # no check to upgrade each time
 	@touch ${PLUGIN_ARNN_VENV}/bin/activate
 
 .PHONY: install
 install: venv ## install pandora_plugin_arnn (pip editable mode) without plugins
-	@test -f ${PLUGIN_ARNN_VENV}/bin/pandora_plugin_arnn || ${PLUGIN_ARNN_VENV}/bin/pip install -e .[dev,docs]
+	@[ "${CHECK_PLUGIN_ARNN}" ] || ${PLUGIN_ARNN_VENV}/bin/pip install -e .[dev,docs]
 	@test -f .git/hooks/pre-commit || echo "  Install pre-commit hook"
 	@test -f .git/hooks/pre-commit || ${PLUGIN_ARNN_VENV}/bin/pre-commit install
 	@echo "PANDORA installed in dev mode in virtualenv ${PLUGIN_ARNN_VENV}"
-	@echo "PANDORA venv usage : source ${PLUGIN_ARNN_VENV}/bin/activate; pandora_plugin_arnn -h"
+	@echo "PANDORA venv usage : source ${PLUGIN_ARNN_VENV}/bin/activate; python -c 'import pandora_plugin_arnn' "
 
 ## Test section
 
@@ -101,7 +97,7 @@ lint/mypy: ## check linting with mypy
 .PHONY: lint/pylint
 lint/pylint: ## check linting with pylint
 	@echo "+ $@"
-	@set -o pipefail; ${PLUGIN_ARNN_VENV}/bin/pylint pandora_plugin_arnn tests --rcfile=.pylintrc --output-format=parseable --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}" # | tee pylint-report.txt # pipefail to propagate pylint exit code in bash
+	@set -o pipefail; ${PLUGIN_ARNN_VENV}/bin/pylint pandora_plugin_arnn tests --rcfile=.pylintrc --output-format=parseable --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}" | tee pylint-report.txt # pipefail to propagate pylint exit code in bash
 
 ## Clean section
 

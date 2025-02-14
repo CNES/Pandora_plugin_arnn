@@ -111,6 +111,8 @@ def load_rgb_data_with_classif():
     """
 
     # Cones images
+    # fix test_vegetation_band_on_left_and_right_classif_with_validation with updated disp [0,60]
+    # otherwise the disparity doesn't exist in right_data and pandora run crashes.
     input_config = {
         "left": {
             "img": "tests/inputs/left_rgb.tif",
@@ -124,7 +126,7 @@ def load_rgb_data_with_classif():
             "nodata": np.nan,
             "mask": None,
             "classif": "tests/inputs/right_classif.tif",
-            "disp": None,
+            "disp": [0, 60],
         },
     }
     left_data = pandora.create_dataset_from_inputs(input_config["left"])

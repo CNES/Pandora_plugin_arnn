@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf8
 #
-# Copyright (C) 2022 CNES.
+# Copyright (C) 2023 CNES.
 #
 # This file is part of pandora_plugin_arnn
 #
@@ -18,4 +18,6 @@
 # limitations under the License.
 #
 
-"""Unit test package for pandora_plugin_arnn."""
+"""
+Test package for pandora_plugin_arnn.
+"""

@@ -7,10 +7,16 @@ A new section Unreleased is opened then for next dev phase.
 ## Unreleased
 
 ### Added
+- prediction method [#8]
+- retrain method [#9]
+- Vegetation classification [#10]
 
 ### Changed
+- Align plugin with Pandora [#12]
+
 
 ### Fixed
+
 
 ## 0.1.0 First Official Release (2022-12-05)
 

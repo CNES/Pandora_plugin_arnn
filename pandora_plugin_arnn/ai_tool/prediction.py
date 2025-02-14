@@ -44,18 +44,18 @@ def prediction(image_dataset: xr.Dataset, model: torch.nn.Module, device: torch.
     """
 
     # Load patch size
-    patch_size = model.get_patch_size()
+    patch_size = model.get_patch_size()  # type: ignore
 
     # Patches image
     overlaps = 0
     patches = extract_patches(image_dataset["im"].data, patch_size, overlaps=overlaps)
 
     # Apply model's transformation
-    patches = model.transform_patches(patches)
+    patches = model.transform_patches(patches)  # type: ignore
     patches = patches.to(device)
 
     # Instantiate parameters
-    nb_classes = len(model.get_classes())
+    nb_classes = len(model.get_classes())  # type: ignore
     _, nb_row, nb_col = image_dataset["im"].shape
 
     # Indices of each patch
@@ -73,7 +73,7 @@ def prediction(image_dataset: xr.Dataset, model: torch.nn.Module, device: torch.
     pred = np.zeros((nb_classes, nb_row, nb_col), dtype=np.float32)
     with torch.no_grad():
         for patch_idx, (row_off, col_off) in enumerate(offset):
-            patch_pred = model.predict(patches[patch_idx : patch_idx + 1, :, :, :]).cpu().numpy().astype(np.float32)
+            patch_pred = model.predict(patches[patch_idx : patch_idx + 1, :, :, :]).cpu().numpy().astype(np.float32)  # type: ignore # pylint: disable
             pred[
                 :,
                 row_off : row_off + patch_size - overlaps,

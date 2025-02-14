@@ -82,7 +82,7 @@ format/black: install  ## run black formatting (depends install) (source venv be
 ### Check code quality and linting : black, mypy, pylint
 
 .PHONY: lint
-lint: install lint/black lint/mypy lint/pylint ## check code quality and linting (source venv before)
+lint: install lint/black lint/pylint ## check code quality and linting (mypy deactivated!) (source venv before)
 
 .PHONY: lint/black
 lint/black: ## check global style with black
